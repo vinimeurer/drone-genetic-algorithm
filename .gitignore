@@ -98,3 +98,8 @@ docs/_build/
 celerybeat-schedule
 celerybeat.pid
 docker-compose.override.yml
+
+# CSV files (ignore all except specific ones)
+*.csv
+!vento.csv
+!coordenadas.csv
