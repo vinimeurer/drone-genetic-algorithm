@@ -215,9 +215,8 @@ def bearing_deg(a: Tuple[float, float], b: Tuple[float, float]) -> float:
 # -----------------------------
 # Parâmetros do drone e bateria
 AUTONOMIA_BASE_SEC = 5000  # base
-MATRICULA_STARTS_WITH = '2'  # conforme enunciado, afeta fator
-MATRICULA_FACTOR = 0.93 if MATRICULA_STARTS_WITH.startswith('2') else 1.0
-AUTONOMIA_SEC = math.ceil(AUTONOMIA_BASE_SEC * MATRICULA_FACTOR)  # aplicar fator e arredondar para cima
+FACTOR = 0.93
+AUTONOMIA_SEC = math.ceil(AUTONOMIA_BASE_SEC * FACTOR)  # aplicar fator e arredondar para cima
 # velocidades: coerentes com ~10 m/s (~36 km/h). Usamos múltiplas velocidades (m/s).
 # Observação: velocidades em km/h múltiplas de 4 eram exigidas; 36 km/h corresponde a 9.999.. m/s ~ 10 m/s
 SPEEDS_KMH = [36, 40, 44]  # km/h (múltiplos próximos e consistentes)
