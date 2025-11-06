@@ -191,33 +191,29 @@ class GeneticAlgorithm:
     # PMX crossover for permutation part
     @staticmethod
     def pmx_crossover(parent_a: List[int], parent_b: List[int]) -> Tuple[List[int], List[int]]:
+        """Robust PMX implementation (avoids mapping loops)."""
         size = len(parent_a)
         if size <= 1:
             return parent_a[:], parent_b[:]
-        a, b = parent_a[:], parent_b[:]
-        cx1 = random.randint(0, size - 1)
-        cx2 = random.randint(0, size - 1)
-        if cx1 > cx2:
-            cx1, cx2 = cx2, cx1
+        cx1, cx2 = sorted(random.sample(range(size), 2))
         child1 = [-1] * size
         child2 = [-1] * size
         # copy slice
-        child1[cx1:cx2 + 1] = a[cx1:cx2 + 1]
-        child2[cx1:cx2 + 1] = b[cx1:cx2 + 1]
+        child1[cx1:cx2 + 1] = parent_a[cx1:cx2 + 1]
+        child2[cx1:cx2 + 1] = parent_b[cx1:cx2 + 1]
 
-        def fill_child(child, donor, start, end):
+        def fill(child: List[int], src: List[int], dst: List[int]):
             for i in range(size):
-                if not (start <= i <= end):
-                    gene = donor[i]
-                    pos = i
-                    while gene in child[start:end + 1]:
-                        # find mapping
-                        idx = donor.index(child[start + list(child[start:end + 1]).index(gene)])
-                        gene = donor[idx]
+                if child[i] == -1:
+                    gene = src[i]
+                    # follow mapping until gene not in copied slice
+                    while gene in child:
+                        idx = src.index(gene)
+                        gene = dst[idx]
                     child[i] = gene
 
-        fill_child(child1, b, cx1, cx2)
-        fill_child(child2, a, cx1, cx2)
+        fill(child1, parent_b, parent_a)
+        fill(child2, parent_a, parent_b)
         return child1, child2
 
     def crossover(self, parent1: Individual, parent2: Individual) -> Tuple[Individual, Individual]:
@@ -268,6 +264,8 @@ class GeneticAlgorithm:
                 ind.speeds[i] = random.choice(ALLOWED_SPEEDS)
 
     def tournament_select(self, population: List[Individual], k: int) -> Individual:
+        """Safe tournament: don't request more aspirants than exist."""
+        k = max(1, min(k, len(population)))
         aspirants = random.sample(population, k)
         aspirants.sort(key=lambda x: x.fitness if x.fitness is not None else float('inf'))
         return aspirants[0]
@@ -295,7 +293,6 @@ class GeneticAlgorithm:
         penalty = 0.0
 
         battery = self.drone.base_autonomy  # start full
-        current_clock_seconds = 0  # relative seconds within day; not used globally
         # We'll track time per leg using day and hour gene as scheduled departure time.
         for i in range(legs):
             a_idx = path[i]
@@ -326,6 +323,12 @@ class GeneticAlgorithm:
                 travel_seconds = float('inf')
             else:
                 travel_seconds = math.ceil(distance_km / v_eff_km_s)
+
+            # Guard against absurdly large travel times (numerical issues or near-zero v_eff)
+            MAX_TRAVEL_SECONDS = 10_000_000
+            if travel_seconds > MAX_TRAVEL_SECONDS:
+                penalty += 1e9
+                travel_seconds = MAX_TRAVEL_SECONDS
 
             # Check battery enough for travel_seconds + PHOTO stop (72s)
             photo_stop = STOP_SECONDS
@@ -358,8 +361,7 @@ class GeneticAlgorithm:
                 penalty += 1e7
 
             # landing cost for recharging accounted earlier; photos don't add monetary cost
-            # keep track for next leg: if returning to base and last leg, allow final landing cost?
-            # If this leg included an enforced recharge we counted cost already
+            # keep track for next leg
 
         # total fitness combines time and monetary cost
         fitness = total_time + total_cost * 1000.0 + penalty
@@ -470,8 +472,8 @@ def main():
     wind.load_from_csv(wind_file)
     drone = DroneModel()
     ga = GeneticAlgorithm(locations, wind, drone,
-                          population_size=5,
-                          generations=2,
+                          population_size=50,
+                          generations=500,
                           tournament_k=3,
                           mutation_rate=0.05,
                           elitism=2)
