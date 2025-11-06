@@ -2,7 +2,7 @@ ABSTRAÇÃO DO PROBLEMA - ADS
 
 1. Entenda o objetivo do problema: O drone deve visitar uma lista de CEPs em Curitiba para tirar fotos, começando e terminando no CEP 82821020 (Unibrasil), visitando cada CEP apenas uma vez (exceto o inicial/final). Minimize o custo total, medido pelo tempo de voo e número de paradas para recarga. Todas as visitas devem ocorrer em até 7 dias, com voos apenas entre 06:00:00 e 19:00:00. Nota: Use um algoritmo genético para otimizar a ordem de visitas, horários e velocidades.
 
-2. Colete e organize os dados de entrada: Obtenha a lista de CEPs e coordenadas (latitude/longitude) do arquivo fornecido pelo professor. Extraia as tabelas de previsão de ventos para os 7 dias (velocidade em nós/km/h e direção, ignorando rajadas). Converta a autonomia base do drone para segundos: 1 hora, 23 minutos e 20 segundos = 5000 segundos. Aplique fator de correção 0.93 para condições reais de Curitiba. Exemplo: Armazene ventos em uma estrutura como dicionário por dia e hora.
+2. Colete e organize os dados de entrada: Obtenha a lista de CEPs e coordenadas (latitude/longitude) do arquivo coordenadas.csv. Extraia as tabelas de previsão de ventos para os 7 dias a partir do arquivo vento.csv (velocidade em nós/km/h e direção, ignorando rajadas). Converta a autonomia base do drone para segundos: 1 hora, 23 minutos e 20 segundos = 5000 segundos. Aplique fator de correção 0.93 para condições reais de Curitiba. Exemplo: Armazene ventos em uma estrutura como dicionário por dia e hora.
 
 3. Implemente o cálculo de distância entre coordenadas: Use a fórmula de Haversine para calcular a distância em km entre dois pontos (latitude/longitude em graus). Fórmula: a = sin²(Δφ/2) + cos(φ1) * cos(φ2) * sin²(Δλ/2); c = 2 * atan2(√a, √(1-a)); d = R * c (R = 6371 km). Nota: Isso dá a distância em linha reta; implemente em código para todos os pares de CEPs.
 
@@ -20,8 +20,158 @@ ABSTRAÇÃO DO PROBLEMA - ADS
 
 10. Gere o arquivo de saída CSV: Para a melhor solução, crie CSV com colunas: CEP inicial, Latitude inicial, Longitude inicial, Dia do voo, Hora inicial, Velocidade, CEP final, Latitude final, Longitude final, Pouso (SIM/NÃO), Hora final. Cada linha é um trecho. Exemplo: Linha para voo de A para B com pouso.
 
+OBSERVAÇÕES ADICIONAIS
 
--------
+- O vento afeta a velocidade efetiva e o consumo, mas não a distância.
+
+- A autonomia e o consumo devem ser recalculados para cada trecho com base na velocidade escolhida.
+
+- Cada problema “cabeludo” (distância, vento, autonomia, tempo, bateria, penalização) deve ser implementado em classes separadas.
+
+- A função fitness deve apenas coordenar essas classes e retornar um valor normalizado entre 0 e 1.
+
+TESTES
 
 Crie testes unitários: Desenvolva pelo menos 3 testes: teste distância Haversine, efeito vento em velocidade, consumo bateria por trecho. Use frameworks como pytest (Python) e meça cobertura.
 
+
+-----------------------------------
+V2
+----------------------------------
+
+1. Entenda o objetivo do problema:
+O drone deve visitar uma lista de CEPs em Curitiba para tirar fotos, começando e terminando no CEP 82821020 (Unibrasil), visitando cada CEP apenas uma vez (exceto o inicial/final).
+
+Objetivo principal: MINIMIZAR O CUSTO TOTAL, medido pelo tempo de voo, número e custo das recargas, além de penalidades por violações (como voo fora do horário ou bateria zerada).
+
+Todas as visitas devem ocorrer em até 7 dias, com voos apenas entre 06:00:00 e 19:00:00.
+
+Use um algoritmo genético para otimizar a ordem de visitas, os horários e as velocidades.
+
+
+2. Colete e organize os dados de entrada:
+- Obtenha a lista de CEPs e coordenadas (latitude/longitude) do arquivo coordenadas.csv.
+  - Atribua um ID numérico sequencial para cada CEP (ex.: primeiro CEP = id 1, segundo = id 2, etc.).
+- Extraia as tabelas de previsão de ventos para os 7 dias a partir do arquivo vento.csv (velocidade e direção, ignorando rajadas).
+  - Armazene os ventos em uma estrutura de dicionário por dia e hora:
+    vento[dia][hora] = {'velocidade_kmh': ..., 'direcao_graus': ...}.
+- Converta a autonomia base do drone para segundos: 1 hora, 23 minutos e 20 segundos = 5000 segundos.
+- Aplique o fator de correção 0.93 para condições reais de Curitiba → autonomia real = 4650 segundos.
+
+
+3. Implemente o cálculo de distância entre coordenadas:
+Use a fórmula de Haversine para calcular a distância em km entre dois pontos (latitude/longitude em graus):
+
+a = sin²(Δφ/2) + cos(φ1) * cos(φ2) * sin²(Δλ/2)
+c = 2 * atan2(√a, √(1−a))
+d = R * c
+
+onde R = 6371 km.
+
+Essa fórmula fornece a distância em linha reta.
+Implemente o cálculo para todos os pares de CEPs, utilizando os IDs definidos.
+
+
+4. Modele o efeito do vento na velocidade e autonomia:
+O vento não altera a distância, mas influencia a velocidade efetiva e o consumo da bateria.
+
+Calcule a velocidade efetiva do drone considerando o vento (direção e velocidade da tabela, fixa durante o trecho baseado na hora de partida).
+
+Use os componentes vetoriais para o drone e o vento:
+- Converta o vento e o vetor de voo (na direção do azimute entre pontos) em vetores (v_x, v_y).
+- A velocidade efetiva será o módulo da soma vetorial:
+  v_efetiva = sqrt((v_gx)² + (v_gy)²)
+
+A autonomia diminui com velocidades acima de 36 km/h, segundo:
+  A(v) = 5000 * 0.93 * (36 / v)²
+
+Consuma 72 segundos por parada (foto ou recarga).
+
+A velocidade do drone deve ser múltiplo de 4, até 96 km/h, e mínimo de 36 km/h (≈10 m/s).
+Velocidades válidas: 36, 40, 44, ..., 96 km/h.
+
+
+5. Calcule o tempo de voo e consumo de bateria por trecho:
+Para cada trecho, calcule o tempo em segundos:
+  t = ceil(distância (km) / (v_efetiva / 3600))
+
+Subtraia o consumo de bateria baseado na velocidade (modo normal ou esportivo) e adicione 72 s por parada.
+
+Se a bateria for insuficiente para completar o trecho, force recarga no CEP atual.
+
+Custos de recarga:
+- R$80 por pouso,
+- +R$80 extras se o pouso ocorrer após 17:00.
+
+
+6. Defina a representação genética (cromossomo):
+Represente a solução como uma permutação da ordem de CEPs (Path Representation), incluindo dias, horários de partida e velocidades por trecho.
+
+Exemplo:
+  Cromossomo = [ordem_CEPs] + [dias] + [horas] + [velocidades]
+
+- ordem_CEPs: lista de IDs correspondentes à ordem de visita.
+- dias: vetor com o dia do voo de cada trecho (1 a 7).
+- horas: vetor com horário de partida.
+- velocidades: vetor com a velocidade (em km/h).
+
+Garanta que o caminho comece e termine no Unibrasil, sem repetições de CEPs.
+Cada índice representa diretamente uma cidade (classificação inteira direta).
+
+
+7. Implemente a função de fitness:
+A função fitness deve calcular o custo total do roteiro (tempo + recargas + penalidades) chamando as classes de cálculo (distância, vento, autonomia, etc.).
+
+Avalie cada solução simulando o voo completo dia a dia, verificando bateria, ventos e horários.
+
+Penalize fortemente soluções inválidas:
+- bateria zerada em voo,
+- voo fora do horário permitido,
+- visitas além de 7 dias.
+
+Use penalidades elevadas (ex.: +10⁶ ou +10⁷) e reparo automático quando possível.
+
+O valor da fitness deve ficar entre 0 e 1, usando a normalização:
+  fitness = 1 / (1 + CustoTotal)
+
+Quanto mais próximo de 1, melhor a solução.
+
+
+8. Configure os operadores genéticos:
+- População inicial: 50–100 indivíduos.
+- Seleção: torneio ou roleta.
+- Crossover: PMX (Partially Mapped Crossover), garantindo permutação válida (sem repetição de CEPs).
+- Mutação: troca, inversão ou deslocamento (taxa entre 0.01 e 0.1).
+- Elitismo: mantenha os melhores indivíduos de cada geração.
+
+Exemplo: para a ordem dos CEPs, use crossover PMX; para velocidades ou horários, pode-se usar crossover de ponto único.
+
+
+9. Execute o algoritmo genético:
+Rode por 100–500 gerações (ou até convergência).
+
+Para cada indivíduo:
+1. Simule o roteiro completo.
+2. Calcule trajetos dia a dia (distância, vento, bateria, recargas, custos).
+3. Verifique restrições (horário, autonomia, dias).
+4. Atribua o fitness (normalizado entre 0 e 1).
+
+Ajuste parâmetros (tamanho da população, taxa de mutação, elitismo) conforme testes.
+Garanta sempre soluções válidas; se inválida, repare ou penalize.
+
+
+10. Gere o arquivo de saída CSV:
+Para a melhor solução, crie um arquivo CSV com as seguintes colunas:
+
+CEP_inicial, Latitude_inicial, Longitude_inicial, Dia_do_voo, Hora_inicial, Velocidade, CEP_final, Latitude_final, Longitude_final, Pouso (SIM/NÃO), Hora_final
+
+Cada linha representa um trecho de voo (de um CEP a outro).
+O CSV final deve refletir o roteiro otimizado de menor custo encontrado pelo algoritmo genético.
+
+
+Observações adicionais incluídas:
+- O vento afeta a velocidade efetiva e o consumo, mas não a distância.
+- A autonomia e o consumo devem ser recalculados para cada trecho com base na velocidade escolhida.
+- Cada problema “cabeludo” (distância, vento, autonomia, tempo, bateria, penalização) deve ser implementado em classes separadas.
+- A função fitness deve apenas coordenar essas classes e retornar um valor normalizado entre 0 e 1.
+"""
