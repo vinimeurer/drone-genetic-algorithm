@@ -113,7 +113,7 @@ class FitnessEvaluator:
         self.wind_calc = WindCalculator()
         self.start_id = data_loader.cep_to_id[START_CEP]
 
-    def evaluate(self, chromosome: List[int], days: List[int], hours: List[int], speeds: List[float]) -> float:
+    def evaluate(self, chromosome: List[int], days: List[int], hours: List[int], speeds: List[float]) -> Tuple[float, float]:
         # chromosome: order of IDs, starting and ending with start_id
         # days: day for each leg (len = len(chromosome)-1)
         # hours: departure hour for each leg
@@ -183,7 +183,7 @@ class FitnessEvaluator:
         
         # Normalize fitness: 1 / (1 + total_cost)
         fitness = 1 / (1 + total_cost)
-        return fitness
+        return fitness, total_cost
 
 class GeneticAlgorithm:
     def __init__(self, data_loader: DataLoader, fitness_evaluator: FitnessEvaluator, num_ceps: int):
@@ -209,7 +209,7 @@ class GeneticAlgorithm:
         selected = []
         for _ in range(2):
             candidates = random.sample(self.population, 3)
-            best = max(candidates, key=lambda x: self.fitness_evaluator.evaluate(*x))
+            best = max(candidates, key=lambda x: self.fitness_evaluator.evaluate(x[0], x[1], x[2], x[3])[0])
             selected.append(best)
         return selected
 
@@ -276,7 +276,7 @@ class GeneticAlgorithm:
         for gen in range(GENERATIONS):
             new_population = []
             # Elitism
-            sorted_pop = sorted(self.population, key=lambda x: self.fitness_evaluator.evaluate(*x), reverse=True)
+            sorted_pop = sorted(self.population, key=lambda x: self.fitness_evaluator.evaluate(x[0], x[1], x[2], x[3])[0], reverse=True)
             elite_count = int(POPULATION_SIZE * ELITISM_RATE)
             new_population.extend(sorted_pop[:elite_count])
             
@@ -288,8 +288,15 @@ class GeneticAlgorithm:
                 new_population.extend([child1, child2])
             
             self.population = new_population[:POPULATION_SIZE]
+            
+            # Log best fitness and cost every 10 generations
+            if gen % 10 == 0 or gen == GENERATIONS - 1:
+                best_fitness, best_cost = self.fitness_evaluator.evaluate(*sorted_pop[0])
+                print(f"Generation {gen}: Best Fitness = {best_fitness:.6f}, Best Cost = {best_cost:.2f}")
         
-        best = max(self.population, key=lambda x: self.fitness_evaluator.evaluate(*x))
+        best = max(self.population, key=lambda x: self.fitness_evaluator.evaluate(x[0], x[1], x[2], x[3])[0])
+        final_fitness, final_cost = self.fitness_evaluator.evaluate(*best)
+        print(f"Final Best: Fitness = {final_fitness:.6f}, Cost = {final_cost:.2f}")
         return best
 
 def main():
