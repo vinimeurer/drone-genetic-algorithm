@@ -44,7 +44,7 @@ from datetime import timedelta, datetime
 # ----- Configuration -----
 COORDINATES_CSV = "coordenadas.csv"
 WIND_CSV = "vento.csv"
-OUTPUT_CSV = "best_route.csv"
+OUTPUT_CSV = "output_drone_v6.csv"
 
 POPULATION_SIZE = 80
 GENERATIONS = 300
@@ -70,7 +70,7 @@ DAY_START_H = 6
 DAY_END_H = 19  # flights must be within [06:00, 19:00]
 
 # Penalties
-BIG_PENALTY = 1e9
+BIG_PENALTY = 1e7
 
 # Costs
 LANDING_COST_R = 80.0
@@ -737,7 +737,7 @@ def main():
     winds = read_wind(WIND_CSV)
 
     # LIMIT FOR TESTING: reduce number of coordinates to a manageable amount
-    MAX_POINTS = None  # <-- adjust for experiments; set to None to keep all
+    MAX_POINTS = 15  # <-- adjust for experiments; set to None to keep all
     if MAX_POINTS is not None and len(coords) > MAX_POINTS:
         print(f"Too many coordinates ({len(coords)}). Truncating to first {MAX_POINTS} for testing.")
         coords = coords[:MAX_POINTS]

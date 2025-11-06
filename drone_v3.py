@@ -340,7 +340,7 @@ def executar_algoritmo(pop_size=100, geracoes=50):
     return hof[0]
 
 # Passo 10: Gerar CSV
-def gerar_csv(melhor_rota, arquivo='rota_otimizada.csv'):
+def gerar_csv(melhor_rota, arquivo='output_drone_v3.csv'):
     """
     Gera CSV com colunas: CEP inicial, Latitude inicial, Longitude inicial, CEP destino, Latitude destino, Longitude destino, Distância (km), Tempo de voo (s), Custo recarga (se aplicável).
     Para toda a rota.
