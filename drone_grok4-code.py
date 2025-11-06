@@ -309,7 +309,7 @@ def main():
     best_order, best_days, best_hours, best_speeds = ga.run()
     
     # Output CSV
-    with open('output_drone_v8.csv', 'w', newline='') as f:
+    with open('output_grok4-code.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['CEP_inicial', 'Latitude_inicial', 'Longitude_inicial', 'Dia_do_voo', 'Hora_inicial', 'Velocidade', 'CEP_final', 'Latitude_final', 'Longitude_final', 'Pouso', 'Hora_final'])
         

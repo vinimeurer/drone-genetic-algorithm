@@ -29,7 +29,7 @@ from typing import Dict, List, Tuple
 # ----------------------------
 COORD_FILE = "coordenadas.csv"
 WIND_FILE = "vento.csv"
-OUTPUT_FILE = "output_drone_v7.csv"
+OUTPUT_FILE = "output_claude4.5.csv"
 
 R_EARTH_KM = 6371.0
 BASE_AUTONOMY_SECONDS = 5000

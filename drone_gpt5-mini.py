@@ -44,7 +44,7 @@ from datetime import timedelta, datetime
 # ----- Configuration -----
 COORDINATES_CSV = "coordenadas.csv"
 WIND_CSV = "vento.csv"
-OUTPUT_CSV = "output_drone_v6.csv"
+OUTPUT_CSV = "output_gpt5-mini.csv"
 
 POPULATION_SIZE = 80
 GENERATIONS = 300
