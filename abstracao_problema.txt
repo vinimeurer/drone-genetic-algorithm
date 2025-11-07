@@ -165,13 +165,53 @@ Para a melhor solução, crie um arquivo CSV com as seguintes colunas:
 
 CEP_inicial, Latitude_inicial, Longitude_inicial, Dia_do_voo, Hora_inicial, Velocidade, CEP_final, Latitude_final, Longitude_final, Pouso (SIM/NÃO), Hora_final
 
+onde:
+
+```
+| **Coluna**           | **Valores possíveis**                                      | **Descrição**                                                                                                                                                                                                 |
+|-----------------------|------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **CEP inicial**       | 80010010 a 82990198                                        | Um dos códigos da lista fornecida pelo professor.                                                                                                                                                             |
+| **Latitude inicial**  | -25,6154928550559 a -25,3530998572423                      | Dado da linha correspondente fornecido pelo professor.                                                                                                                                                        |
+| **Longitude inicial** | -49,372483 a -49,1880231206476                             | Dado da linha correspondente fornecido pelo professor.                                                                                                                                                        |
+| **Dia do voo**        | 1, 2, 3, 4, 5, 6 ou 7                                      | Conforme previsão de vento dada pelo professor.                                                                                                                                                               |
+| **Hora inicial**      | 06:00:00 a 19:00:00                                        | Hora de saída do drone da coordenada inicial indicada nesta linha.                                                                                                                                            |
+| **Velocidade**        | 0 a 96                                                     | Valor inteiro indicando a velocidade de voo neste trecho, em Km/h, antes da aplicação do ajuste por conta do vento.                                                                                          |
+| **CEP final**         | 80010010 a 82990198                                        | Um dos códigos da lista fornecida pelo professor.                                                                                                                                                             |
+| **Latitude final**    | -25,6154928550559 a -25,3530998572423                      | Dado da linha correspondente fornecido pelo professor.                                                                                                                                                        |
+| **Longitude final**   | -49,372483 a -49,1880231206476                             | Dado da linha correspondente fornecido pelo professor.                                                                                                                                                        |
+| **Pouso**             | SIM ou NÃO                                                 | **SIM:** drone pousou e ficará parado em solo até o dia e horário indicados na próxima linha, quando decolará com bateria recarregada.<br>**NÃO:** o drone ficará um minuto ou mais parado no ar tirando fotos. |
+| **Hora final**        | 06:00:00 a 19:00:00                                        | Hora de chegada do drone na coordenada de destino, considerando velocidade efetiva após aplicação do vento e o tempo de desaceleração e/ou pouso.                                                            |
+```
+
 Cada linha representa um trecho de voo (de um CEP a outro).
 O CSV final deve refletir o roteiro otimizado de menor custo encontrado pelo algoritmo genético.
+O csv deve conter o roteiro seguindo a ordem correta de dias, respeitando ceps visitados, horários e velocidades, entre outros. 
+Exemplo correto de trecho:
+```
+CEP_inicial, Latitude_inicial, Longitude_inicial, Dia_do_voo, Hora_inicial, Velocidade, CEP_final, Latitude_final, Longitude_final, Pouso (SIM/NÃO), Hora_final
+82821020, -25.429596, -49.2733, 1, 06:30:00, 60, 80010000, -25.4321, -49.2500, SIM, 06:50:00
+80010000, -25.4321, -49.2500, 1, 07:00:00, 64, 80020000, -25.4400, -49.2400, NÃO, 07:20:00
+80020000, -25.4400, -49.2400, 1, 07:30:00, 68, 82821020, -25.429596, -49.2733, SIM, 07:50:00
+82921020, -25.429596, -49.2733, 2, 06:15:00, 72, 80030000, -25.4500, -49.2300, SIM, 06:35:00
+80030000, -25.4500, -49.2300, 2, 06:45:00, 76, 82821020, -25.429596, -49.2733, SIM, 07:05:00
+...
+```
 
+perceba que ele segue a ordem correta de dias, horários, velocidades, pousos, etc.
+
+Exemplo de trecho incorreto:
+```
+CEP_inicial, Latitude_inicial, Longitude_inicial, Dia_do_voo, Hora_inicial, Velocidade, CEP_final, Latitude_final, Longitude_final, Pouso (SIM/NÃO), Hora_final
+80010000, -25.4321, -49.2500, 7, 06:30:00, 60, 82821020, -25.429596, -49.2733, SIM, 06:50:00
+82921020, -25.429596, -49.2733, 1, 06:15:00, 72, 80030000, -25.4500, -49.2300, SIM, 06:35:00
+80030000, -25.4500, -49.2300, 4, 06:45:00, 76, 80010000, -25.4321, -49.2500, SIM, 07:05:00
+...
+Note que ele não segue a ordem correta de dias, horários, velocidades, pousos, etc.
+```
 
 Observações adicionais incluídas:
 - O vento afeta a velocidade efetiva e o consumo, mas não a distância.
 - A autonomia e o consumo devem ser recalculados para cada trecho com base na velocidade escolhida.
 - Cada problema “cabeludo” (distância, vento, autonomia, tempo, bateria, penalização) deve ser implementado em classes separadas.
 - A função fitness deve apenas coordenar essas classes e retornar um valor normalizado entre 0 e 1.
-"""
+- O roteiro deve ser escrito NA ORDEM DO CAMINHO FÍSICO (permutação do cromossomo), NÃO por ordem cronológica. Mas o GA deve garantir que os horários respeitem a sequência física e a bateria entre trechos consecutivos.
