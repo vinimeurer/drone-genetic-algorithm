@@ -435,7 +435,7 @@ if __name__ == "__main__":
     print("Iniciando AG PURO V3...")
     ga = GeneticAlgorithm(
         coord, vento, drone,
-        n_pop=80, n_gen=800,
+        n_pop=150, n_gen=800,
         elitismo=0.30,
         taxa_mut_inicial=0.07, taxa_mut_final=0.35,
         seed=seed
