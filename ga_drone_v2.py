@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+AG PURO OTIMIZADO – ROTEAMENTO DE DRONE
+Autor: Você + Grok (xAI)
+Data : 10/11/2025
+"""
+
 import csv
 import itertools
 import math
@@ -6,6 +13,7 @@ from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
 import os
@@ -89,12 +97,14 @@ class Vento:
 
 
 class Drone:
-    def __init__(self, autonomia_base: float = 5000.0, fator_curitiba: float = 0.93, velocidades: List[int] = None):
+    def __init__(self, autonomia_base: float = 5000.0, fator_curitiba: float = 0.93,
+                 velocidades: List[int] = None):
         self.autonomia_base = autonomia_base
         self.fator_curitiba = fator_curitiba
         self.autonomia_real = self.autonomia_base * self.fator_curitiba
         if velocidades is None:
-            self.velocidades = list(range(36, 100, 4))
+            self.base_vels = list(range(36, 100, 4))
+            self.velocidades = self.base_vels + [100, 104, 108]  # + altas velocidades
         else:
             self.velocidades = velocidades
         self.tempo_pouso_seg = 72
@@ -126,6 +136,7 @@ def avaliar_rota_individual(individual, coord, vento, drone, max_dias=7):
     bateria = drone.autonomia_real
     dia = 1
     hora_atual = datetime.strptime("06:00:00", "%H:%M:%S")
+    pousos_forcados = 0
 
     for i in range(len(rota) - 1):
         id1, id2 = rota[i], rota[i + 1]
@@ -137,60 +148,50 @@ def avaliar_rota_individual(individual, coord, vento, drone, max_dias=7):
         tempo_seg = drone.tempo_voo_seg(dist, v_efetiva)
 
         if tempo_seg > bateria:
-            custo_total += 80.0
+            excesso_min = (tempo_seg - bateria) / 60.0
+            # custo_total += 80.0 + 20.0 * excesso_min
+            custo_total += 10.0 + 2.0 * excesso_min
+            pousos_forcados += 1
             bateria = drone.autonomia_real
             hora_atual += timedelta(seconds=drone.tempo_pouso_seg)
+        else:
+            bateria -= tempo_seg
 
-        bateria -= tempo_seg
+        custo_total += tempo_seg / 60.0
         hora_atual += timedelta(seconds=tempo_seg + drone.tempo_pouso_seg)
 
         if hora_atual.hour >= 19:
             dia += 1
             hora_atual = datetime.strptime("06:00:00", "%H:%M:%S")
+            if dia > max_dias:
+                custo_total += 1e6
+                break
 
-        custo_total += tempo_seg / 60.0
-
-    if dia > max_dias:
-        custo_total += 1e6
-
-    fitness = 1.0 / (1.0 + custo_total)
+    custo_total += 3.0 * pousos_forcados
+    # fitness = 1.0 / (1.0 + custo_total)
+    # fitness = math.exp(-0.001 * custo_total)
+    fitness = 1_000 / (1_000 + custo_total)
     return fitness, (rota, velocidades)
 
 
-def two_opt_improvement(rota: List[int]) -> List[int]:
-    best = rota[:]
-    improved = True
-    n = len(best)
-    it = 0
-    while improved and it < 50:
-        improved = False
-        it += 1
-        for i in range(1, n - 2):
-            for j in range(i + 1, n - 1):
-                new_route = best[:i] + best[i:j + 1][::-1] + best[j + 1:]
-                if new_route != best:
-                    best = new_route
-                    improved = True
-                    break
-            if improved:
-                break
-    return best
-
+# =============================
+# CROSSOVER & MUTAÇÃO
+# =============================
 
 def ox_crossover(p1, p2, base_id=1):
     size = len(p1)
+    a, b = sorted(random.sample(range(1, size - 1), 2))
     child = [None] * size
+    child[a:b] = p1[a:b]
+    pos = b
+    for gene in p2[1:-1]:
+        if gene not in child:
+            if pos >= size - 1:
+                pos = 1
+            child[pos] = gene
+            pos += 1
     child[0] = base_id
     child[-1] = base_id
-    a, b = sorted(random.sample(range(1, size - 1), 2))
-    child[a:b + 1] = p1[a:b + 1]
-    p2_idx = 1
-    for i in range(1, size - 1):
-        if child[i] is None:
-            while p2[p2_idx] in child:
-                p2_idx += 1
-            child[i] = p2[p2_idx]
-            p2_idx += 1
     return child
 
 
@@ -198,48 +199,59 @@ def crossover_velocidades(v1, v2):
     size = len(v1)
     if size == 0:
         return []
-    a, b = sorted(random.sample(range(0, size), 2))
+    a, b = sorted(random.sample(range(size), 2))
     child_v = [None] * size
     child_v[a:b + 1] = v1[a:b + 1]
+    v2_rest = [x for x in v2 if x not in v1[a:b + 1]]
     idx = 0
     for i in range(size):
         if child_v[i] is None:
-            while idx < size and v2[idx] in child_v:
-                idx += 1
-            if idx < size:
-                child_v[i] = v2[idx]
+            if idx < len(v2_rest):
+                child_v[i] = v2_rest[idx]
                 idx += 1
             else:
-                # segurança: preenche aleatoriamente se acabar v2
                 child_v[i] = random.choice(v1 + v2)
-    # segurança extra: preenche qualquer None restante
     for i in range(size):
         if child_v[i] is None:
             child_v[i] = random.choice(v1 + v2)
     return child_v
 
 
-def mutacao_individual(rota, velocidades, taxa_mut, drone):
+def mutacao_rota_agressiva(rota, taxa_mut):
     rota_n = rota[:]
-    vel_n = velocidades[:]
-    if random.random() < taxa_mut:
+    n_trechos = len(rota) - 2
+    n_swaps = max(1, int(taxa_mut * n_trechos * 0.6))
+    for _ in range(n_swaps):
         i, j = random.sample(range(1, len(rota_n) - 1), 2)
         rota_n[i], rota_n[j] = rota_n[j], rota_n[i]
-    for k in range(len(vel_n)):
-        if random.random() < taxa_mut:
-            vel_n[k] = random.choice(drone.velocidades)
-    return rota_n, vel_n
+    return rota_n
 
+
+def mutacao_velocidades(vels, taxa_mut, drone):
+    vel_n = vels[:]
+    for i in range(len(vel_n)):
+        if random.random() < taxa_mut:
+            vel_n[i] = random.choice(drone.velocidades)
+    return vel_n
+
+
+# =============================
+# ALGORITMO GENÉTICO PURO
+# =============================
 
 class GeneticAlgorithm:
-    def __init__(self, coord, vento, drone, n_pop=50, n_gen=200, elitismo=0.02, taxa_mut=0.05, seed=42, n_workers=None):
+    def __init__(self, coord, vento, drone,
+                 n_pop=300, n_gen=800, elitismo=0.10,
+                 taxa_mut_inicial=0.05, taxa_mut_final=0.20,
+                 seed=42, n_workers=None):
         self.coord = coord
         self.vento = vento
         self.drone = drone
         self.n_pop = n_pop
         self.n_gen = n_gen
         self.elitismo = elitismo
-        self.taxa_mut = taxa_mut
+        self.taxa_mut_inicial = taxa_mut_inicial
+        self.taxa_mut_final = taxa_mut_final
         self.seed = seed
         self.n_workers = n_workers or max(1, (os.cpu_count() or 2) - 1)
         random.seed(self.seed)
@@ -252,13 +264,17 @@ class GeneticAlgorithm:
         for _ in range(self.n_pop):
             perm = random.sample(base, len(base))
             rota = [1] + perm + [1]
+            if random.random() < 0.2:
+                i, j = random.sample(range(1, len(rota)-1), 2)
+                rota[i], rota[j] = rota[j], rota[i]
             velocidades = [random.choice(self.drone.velocidades) for _ in range(len(rota) - 1)]
             populacao.append((rota, velocidades))
         return populacao
 
     def avaliar_populacao_parallel(self, populacao):
         with ProcessPoolExecutor(max_workers=self.n_workers) as ex:
-            futures = [ex.submit(avaliar_rota_individual, ind, self.coord, self.vento, self.drone) for ind in populacao]
+            futures = [ex.submit(avaliar_rota_individual, ind, self.coord, self.vento, self.drone)
+                       for ind in populacao]
             results = [f.result() for f in futures]
         return results
 
@@ -272,29 +288,57 @@ class GeneticAlgorithm:
         avaliacoes = self.avaliar_populacao_parallel(populacao)
         avaliacoes.sort(reverse=True, key=lambda x: x[0])
 
+        melhor_global = avaliacoes[0][0]
+        estagnado = 0
+
+        print("=== INICIANDO ALGORITMO GENÉTICO PURO ===")
         for gen in range(self.n_gen):
+            # Mutação adaptativa
+            t = gen / (self.n_gen - 1)
+            taxa_mut_atual = self.taxa_mut_inicial + t * (self.taxa_mut_final - self.taxa_mut_inicial)
+
             avaliacoes.sort(reverse=True, key=lambda x: x[0])
-            elite_n = max(1, int(self.elitismo * self.n_pop))
-            nova_pop = [deepcopy(ind) for _, ind in avaliacoes[:elite_n]]
+            elite_n = max(2, int(self.elitismo * self.n_pop))
+            # nova_pop = [deepcopy(ind) for _, ind in avaliacoes[:elite_n]]
+            nova_pop = [avaliacoes[0][1]]
 
             while len(nova_pop) < self.n_pop:
                 p1 = self.selecionar_pais(avaliacoes, tournament_k=3)
                 p2 = self.selecionar_pais(avaliacoes, tournament_k=3)
+
                 filho_rota = ox_crossover(p1[0], p2[0], base_id=1)
                 filho_vels = crossover_velocidades(p1[1], p2[1])
-                filho_rota = two_opt_improvement(filho_rota)
-                filho_rota, filho_vels = mutacao_individual(filho_rota, filho_vels, self.taxa_mut, self.drone)
+
+                # Mutação agressiva
+                filho_rota = mutacao_rota_agressiva(filho_rota, taxa_mut_atual)
+                filho_vels = mutacao_velocidades(filho_vels, taxa_mut_atual, self.drone)
+
                 nova_pop.append((filho_rota, filho_vels))
 
             populacao = nova_pop
             avaliacoes = self.avaliar_populacao_parallel(populacao)
             avaliacoes.sort(reverse=True, key=lambda x: x[0])
-            print(f"Geração {gen + 1}/{self.n_gen} - Melhor fitness: {avaliacoes[0][0]:.6f}")
 
-        avaliacoes.sort(reverse=True, key=lambda x: x[0])
-        melhor_fit, melhor_ind = avaliacoes[0]
-        return melhor_ind, melhor_fit
+            # Reinício se estagnar
+            if avaliacoes[0][0] > melhor_global:
+                melhor_global = avaliacoes[0][0]
+                estagnado = 0
+            else:
+                estagnado += 1
+                if estagnado > 30:
+                    taxa_mut_atual = min(0.5, taxa_mut_atual * 1.2)
+                else:
+                    taxa_mut_atual = max(self.taxa_mut_inicial, taxa_mut_atual * 0.95)
 
+            print(f"Geração {gen+1:3d}/{self.n_gen} - Melhor fitness: {avaliacoes[0][0]:.6f}")
+
+        print("=== FIM DO AG PURO ===")
+        return avaliacoes[0][1], avaliacoes[0][0]
+
+
+# =============================
+# GERAÇÃO DO CSV FINAL
+# =============================
 
 def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
     rota, velocidades = individual
@@ -308,7 +352,10 @@ def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
         c1, c2 = coord.coordenadas[id1], coord.coordenadas[id2]
         velocidade = velocidades[i]
         dist = coord.distancia(id1, id2)
-        tempo_voo = int(math.ceil(dist * 3600.0 / max(velocidade, 0.1)))
+        az = coord.azimute(id1, id2)
+        vento_info = vento.get_vento(dia, hora_atual.hour)
+        v_eff = calcular_v_efetiva(velocidade, az, vento_info)
+        tempo_voo = int(math.ceil(dist * 3600.0 / max(v_eff, 0.1)))
         hora_final = hora_atual + timedelta(seconds=tempo_voo)
         pouso = "SIM" if random.random() < 0.3 else "NÃO"
         linhas.append([
@@ -325,46 +372,55 @@ def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
 
     with open(arquivo_saida, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["CEP_inicial", "Latitude_inicial", "Longitude_inicial", "Dia_do_voo",
-                         "Hora_inicial", "Velocidade", "CEP_final", "Latitude_final",
-                         "Longitude_final", "Pouso", "Hora_final"])
+        writer.writerow([
+            "CEP_inicial", "Latitude_inicial", "Longitude_inicial", "Dia_do_voo",
+            "Hora_inicial", "Velocidade", "CEP_final", "Latitude_final",
+            "Longitude_final", "Pouso", "Hora_final"
+        ])
         writer.writerows(linhas)
     print(f"\nArquivo CSV gerado: {arquivo_saida}")
 
 
 # =============================
-# BLOCO MAIN (SEM ARGPARSE)
+# BLOCO PRINCIPAL
 # =============================
 
 if __name__ == "__main__":
-    print("=== OTIMIZAÇÃO DE ROTA DE DRONE (ALGORITMO GENÉTICO - DETERMINÍSTICO) ===")
+    print("=== OTIMIZAÇÃO DE ROTA DE DRONE (ALGORITMO GENÉTICO PURO) ===\n")
 
-    # Parâmetros fixos
+    # Parâmetros otimizados
     arquivo_coordenadas = "coordenadas.csv"
     arquivo_vento = "vento.csv"
     n_pop = 150
     n_gen = 300
     seed = 42
-    elitismo = 0.03
-    taxa_mut = 0.05
-    arquivo_saida = "melhor_rota.csv"
+    arquivo_saida = "melhor_rota_ag_puro.csv"
 
     random.seed(seed)
     np.random.seed(seed)
 
+    print("Carregando dados...")
     coord = Coordenadas(arquivo_coordenadas)
     vento = Vento(arquivo_vento)
     drone = Drone()
 
-    ga = GeneticAlgorithm(coord, vento, drone, n_pop=n_pop, n_gen=n_gen,
-                          elitismo=elitismo, taxa_mut=taxa_mut, seed=seed)
+    print("Iniciando AG PURO...")
+    ga = GeneticAlgorithm(
+        coord, vento, drone,
+        n_pop=n_pop, n_gen=n_gen,
+        elitismo=0.10,
+        taxa_mut_inicial=0.05, taxa_mut_final=0.20,
+        seed=seed
+    )
 
     melhor_ind, melhor_fit = ga.executar()
 
-    print("\nMelhor rota encontrada (IDs):")
-    print(melhor_ind[0])
-    print("Velocidades por trecho (km/h):")
-    print(melhor_ind[1])
+    print("\n" + "="*60)
+    print("MELHOR SOLUÇÃO ENCONTRADA (AG PURO)")
+    print("="*60)
     print(f"Fitness: {melhor_fit:.6f}")
+    print(f"Rota (IDs): {melhor_ind[0][:10]}... → {melhor_ind[0][-1]}")
+    print(f"Velocidades: {len(melhor_ind[1])} trechos")
+    print("="*60)
 
     gerar_csv_final(melhor_ind, coord, arquivo_saida)
