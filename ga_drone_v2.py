@@ -271,11 +271,11 @@ class GeneticAlgorithm:
             populacao.append((rota, velocidades))
         return populacao
 
-    def avaliar_populacao_parallel(self, populacao):
-        with ProcessPoolExecutor(max_workers=self.n_workers) as ex:
-            futures = [ex.submit(avaliar_rota_individual, ind, self.coord, self.vento, self.drone)
-                       for ind in populacao]
-            results = [f.result() for f in futures]
+    # 🔹 Ajustado: agora recebe o executor já criado
+    def avaliar_populacao_parallel(self, populacao, ex):
+        futures = [ex.submit(avaliar_rota_individual, ind, self.coord, self.vento, self.drone)
+                   for ind in populacao]
+        results = [f.result() for f in futures]
         return results
 
     def selecionar_pais(self, avaliacoes, gen):
@@ -285,78 +285,81 @@ class GeneticAlgorithm:
 
     def executar(self):
         populacao = self.inicializar_populacao()
-        avaliacoes = self.avaliar_populacao_parallel(populacao)
-        avaliacoes.sort(reverse=True, key=lambda x: x[0])
 
-        melhor_global = avaliacoes[0]
-        estagnado = 0
-
-        print("=== INICIANDO AG PURO V3 (DISTÂNCIA + TEMPO) ===")
-        for gen in range(self.n_gen):
-            t = gen / (self.n_gen - 1)
-            taxa_mut_atual = self.taxa_mut_inicial + t * (self.taxa_mut_final - self.taxa_mut_inicial)
-
-            elite_n = max(5, int(self.elitismo * self.n_pop))
-            nova_pop = [avaliacoes[i][1][:2] for i in range(elite_n)]  # só rota e velocidades
-
-            # Diversidade
-            for _ in range(4):
-                perm = random.sample(self.base, len(self.base))
-                rota = [1] + perm + [1]
-                rota = mutacao_inversao(rota, taxa_mut_atual * 1.8)
-                velocidades = [random.choices(
-                    self.drone.velocidades,
-                    weights=[0.2]*len(self.drone.velocidades[:-6]) + [0.8]*6,
-                    k=1)[0] for _ in range(len(rota)-1)]
-                nova_pop.append((rota, velocidades))
-
-            while len(nova_pop) < self.n_pop:
-                p1 = self.selecionar_pais(avaliacoes, gen)
-                p2 = self.selecionar_pais(avaliacoes, gen)
-
-                filho_rota = ox_crossover(p1[0], p2[0], base_id=1)
-                filho_vels = crossover_velocidades(p1[1], p2[1])
-
-                filho_rota = mutacao_inversao(filho_rota, taxa_mut_atual)
-                filho_vels = mutacao_velocidades(filho_vels, taxa_mut_atual, self.drone)
-
-                nova_pop.append((filho_rota, filho_vels))
-
-            populacao = nova_pop
-            avaliacoes = self.avaliar_populacao_parallel(populacao)
+        # ⚙️ Cria o pool uma única vez e usa em todas as gerações
+        with ProcessPoolExecutor(max_workers=self.n_workers) as ex:
+            avaliacoes = self.avaliar_populacao_parallel(populacao, ex)
             avaliacoes.sort(reverse=True, key=lambda x: x[0])
 
-            if avaliacoes[0][0] > melhor_global[0]:
-                melhor_global = avaliacoes[0]
-                estagnado = 0
-            else:
-                estagnado += 1
+            melhor_global = avaliacoes[0]
+            estagnado = 0
 
-            # Reinício catastrófico
-            if estagnado > 40:
-                print(f"\n>>> REINÍCIO INTELIGENTE na G{gen+1} <<<")
-                nova_pop = [melhor_global[1][:2]]
-                for _ in range(self.n_pop - 1):
+            print("=== INICIANDO AG PURO V3 (DISTÂNCIA + TEMPO) ===")
+            for gen in range(self.n_gen):
+                t = gen / (self.n_gen - 1)
+                taxa_mut_atual = self.taxa_mut_inicial + t * (self.taxa_mut_final - self.taxa_mut_inicial)
+
+                elite_n = max(5, int(self.elitismo * self.n_pop))
+                nova_pop = [avaliacoes[i][1][:2] for i in range(elite_n)]  # só rota e velocidades
+
+                # Diversidade
+                for _ in range(4):
                     perm = random.sample(self.base, len(self.base))
                     rota = [1] + perm + [1]
-                    rota = mutacao_inversao(rota, 0.75)
+                    rota = mutacao_inversao(rota, taxa_mut_atual * 1.8)
                     velocidades = [random.choices(
                         self.drone.velocidades,
-                        weights=[0.15]*len(self.drone.velocidades[:-6]) + [0.85]*6,
+                        weights=[0.2]*len(self.drone.velocidades[:-6]) + [0.8]*6,
                         k=1)[0] for _ in range(len(rota)-1)]
                     nova_pop.append((rota, velocidades))
-                populacao = nova_pop
-                avaliacoes = self.avaliar_populacao_parallel(populacao)
-                avaliacoes.sort(reverse=True, key=lambda x: x[0])
-                estagnado = 0
 
-            # Log rico
-            best = avaliacoes[0]
-            dist = best[1][2]
-            tempo = best[1][3] / 40  # aproximado
-            print(f"G{gen+1:3d} | Fit: {best[0]:.5f} | "
-                  f"Dist: {dist:.1f}km | Tempo: ~{tempo:.0f}min | "
-                  f"Rec: {best[1][4]} | Stag: {estagnado}")
+                while len(nova_pop) < self.n_pop:
+                    p1 = self.selecionar_pais(avaliacoes, gen)
+                    p2 = self.selecionar_pais(avaliacoes, gen)
+
+                    filho_rota = ox_crossover(p1[0], p2[0], base_id=1)
+                    filho_vels = crossover_velocidades(p1[1], p2[1])
+
+                    filho_rota = mutacao_inversao(filho_rota, taxa_mut_atual)
+                    filho_vels = mutacao_velocidades(filho_vels, taxa_mut_atual, self.drone)
+
+                    nova_pop.append((filho_rota, filho_vels))
+
+                populacao = nova_pop
+                avaliacoes = self.avaliar_populacao_parallel(populacao, ex)
+                avaliacoes.sort(reverse=True, key=lambda x: x[0])
+
+                if avaliacoes[0][0] > melhor_global[0]:
+                    melhor_global = avaliacoes[0]
+                    estagnado = 0
+                else:
+                    estagnado += 1
+
+                # Reinício catastrófico
+                if estagnado > 40:
+                    print(f"\n>>> REINÍCIO INTELIGENTE na G{gen+1} <<<")
+                    nova_pop = [melhor_global[1][:2]]
+                    for _ in range(self.n_pop - 1):
+                        perm = random.sample(self.base, len(self.base))
+                        rota = [1] + perm + [1]
+                        rota = mutacao_inversao(rota, 0.75)
+                        velocidades = [random.choices(
+                            self.drone.velocidades,
+                            weights=[0.15]*len(self.drone.velocidades[:-6]) + [0.85]*6,
+                            k=1)[0] for _ in range(len(rota)-1)]
+                        nova_pop.append((rota, velocidades))
+                    populacao = nova_pop
+                    avaliacoes = self.avaliar_populacao_parallel(populacao, ex)
+                    avaliacoes.sort(reverse=True, key=lambda x: x[0])
+                    estagnado = 0
+
+                # Log rico
+                best = avaliacoes[0]
+                dist = best[1][2]
+                tempo = best[1][3] / 40  # aproximado
+                print(f"G{gen+1:3d} | Fit: {best[0]:.5f} | "
+                      f"Dist: {dist:.1f}km | Tempo: ~{tempo:.0f}min | "
+                      f"Rec: {best[1][4]} | Stag: {estagnado}")
 
         print("=== FIM DO AG PURO V3 ===")
         return melhor_global[1], melhor_global[0]
@@ -432,7 +435,7 @@ if __name__ == "__main__":
     print("Iniciando AG PURO V3...")
     ga = GeneticAlgorithm(
         coord, vento, drone,
-        n_pop=100, n_gen=200,
+        n_pop=150, n_gen=300,
         elitismo=0.12,
         taxa_mut_inicial=0.07, taxa_mut_final=0.35,
         seed=seed
