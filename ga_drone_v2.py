@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-AG PURO OTIMIZADO – ROTEAMENTO DE DRONE
+AG PURO V3 – ROTEAMENTO DE DRONE (DISTÂNCIA + TEMPO + VIABILIDADE)
 Autor: Você + Grok (xAI)
-Data : 10/11/2025
+Data: 10/11/2025
 """
 
 import csv
@@ -104,13 +104,10 @@ class Drone:
         self.autonomia_real = self.autonomia_base * self.fator_curitiba
         if velocidades is None:
             self.base_vels = list(range(36, 100, 4))
-            self.velocidades = self.base_vels + [100, 104, 108]  # + altas velocidades
+            self.velocidades = self.base_vels
         else:
             self.velocidades = velocidades
         self.tempo_pouso_seg = 72
-
-    def autonomia_por_velocidade(self, v_kmh: float) -> float:
-        return self.autonomia_base * self.fator_curitiba * (36.0 / v_kmh) ** 2
 
     def tempo_voo_seg(self, distancia_km: float, v_kmh: float) -> int:
         if v_kmh <= 0:
@@ -130,48 +127,62 @@ def calcular_v_efetiva(v_drone_kmh: float, direcao_voo_deg: float, vento_info: D
     return max(v_eff, 0.1)
 
 
+# =============================
+# AVALIAÇÃO COM DISTÂNCIA + TEMPO
+# =============================
+
 def avaliar_rota_individual(individual, coord, vento, drone, max_dias=7):
     rota, velocidades = individual
     custo_total = 0.0
+    distancia_total = 0.0
     bateria = drone.autonomia_real
     dia = 1
     hora_atual = datetime.strptime("06:00:00", "%H:%M:%S")
     pousos_forcados = 0
+    recargas = []
 
     for i in range(len(rota) - 1):
         id1, id2 = rota[i], rota[i + 1]
         dist = coord.distancia(id1, id2)
+        distancia_total += dist
         v_chosen = float(velocidades[i])
         az = coord.azimute(id1, id2)
         vento_info = vento.get_vento(dia, hora_atual.hour)
         v_efetiva = calcular_v_efetiva(v_chosen, az, vento_info)
         tempo_seg = drone.tempo_voo_seg(dist, v_efetiva)
 
+        # Penalidade por bateria
         if tempo_seg > bateria:
             excesso_min = (tempo_seg - bateria) / 60.0
-            # custo_total += 80.0 + 20.0 * excesso_min
-            custo_total += 10.0 + 2.0 * excesso_min
+            custo_total += 15.0 + 3.0 * excesso_min
             pousos_forcados += 1
+            recargas.append((id1, "RECARGA FORÇADA"))
             bateria = drone.autonomia_real
             hora_atual += timedelta(seconds=drone.tempo_pouso_seg)
         else:
             bateria -= tempo_seg
 
-        custo_total += tempo_seg / 60.0
+        # Custo: tempo (min) + distância (km ponderada)
+        custo_total += (tempo_seg / 60.0) + (dist * 40.0)  # 40 = peso da distância
+
         hora_atual += timedelta(seconds=tempo_seg + drone.tempo_pouso_seg)
 
         if hora_atual.hour >= 19:
             dia += 1
             hora_atual = datetime.strptime("06:00:00", "%H:%M:%S")
             if dia > max_dias:
-                custo_total += 1e6
+                custo_total += 1e7
                 break
 
-    custo_total += 3.0 * pousos_forcados
-    # fitness = 1.0 / (1.0 + custo_total)
-    # fitness = math.exp(-0.001 * custo_total)
-    fitness = 1_000 / (1_000 + custo_total)
-    return fitness, (rota, velocidades)
+    custo_total += 5.0 * pousos_forcados
+
+    # FITNESS: quanto menor o custo, maior o fitness
+    custo_ref = 60000  # referência: ~1000km + 1000min
+    fitness = 1.0 / (1.0 + (custo_total / custo_ref) ** 1.8)
+    fitness = max(0.01, min(0.99, fitness))
+    fitness = round(fitness, 5)
+
+    return fitness, (rota, velocidades, distancia_total, custo_total, pousos_forcados, recargas)
 
 
 # =============================
@@ -180,12 +191,14 @@ def avaliar_rota_individual(individual, coord, vento, drone, max_dias=7):
 
 def ox_crossover(p1, p2, base_id=1):
     size = len(p1)
+    if size < 4:
+        return p1[:], p2[:]
     a, b = sorted(random.sample(range(1, size - 1), 2))
     child = [None] * size
     child[a:b] = p1[a:b]
     pos = b
     for gene in p2[1:-1]:
-        if gene not in child:
+        if gene not in child[a:b]:
             if pos >= size - 1:
                 pos = 1
             child[pos] = gene
@@ -200,49 +213,37 @@ def crossover_velocidades(v1, v2):
     if size == 0:
         return []
     a, b = sorted(random.sample(range(size), 2))
-    child_v = [None] * size
-    child_v[a:b + 1] = v1[a:b + 1]
-    v2_rest = [x for x in v2 if x not in v1[a:b + 1]]
-    idx = 0
-    for i in range(size):
-        if child_v[i] is None:
-            if idx < len(v2_rest):
-                child_v[i] = v2_rest[idx]
-                idx += 1
-            else:
-                child_v[i] = random.choice(v1 + v2)
-    for i in range(size):
-        if child_v[i] is None:
-            child_v[i] = random.choice(v1 + v2)
-    return child_v
+    child_v = v1[a:b+1]
+    rest = [x for x in v2 if x not in child_v]
+    random.shuffle(rest)
+    return child_v + rest[:size - len(child_v)] + [random.choice(v1+v2)] * max(0, size - len(child_v) - len(rest))
 
 
-def mutacao_rota_agressiva(rota, taxa_mut):
-    rota_n = rota[:]
-    n_trechos = len(rota) - 2
-    n_swaps = max(1, int(taxa_mut * n_trechos * 0.6))
-    for _ in range(n_swaps):
-        i, j = random.sample(range(1, len(rota_n) - 1), 2)
-        rota_n[i], rota_n[j] = rota_n[j], rota_n[i]
-    return rota_n
+def mutacao_inversao(rota, taxa):
+    if random.random() > taxa:
+        return rota
+    i, j = sorted(random.sample(range(1, len(rota)-1), 2))
+    return rota[:i] + rota[i:j+1][::-1] + rota[j+1:]
 
 
 def mutacao_velocidades(vels, taxa_mut, drone):
     vel_n = vels[:]
+    high_vels = drone.velocidades[-6:]
+    weights = [0.25] * (len(drone.velocidades) - len(high_vels)) + [0.75] * len(high_vels)
     for i in range(len(vel_n)):
         if random.random() < taxa_mut:
-            vel_n[i] = random.choice(drone.velocidades)
+            vel_n[i] = random.choices(drone.velocidades, weights=weights, k=1)[0]
     return vel_n
 
 
 # =============================
-# ALGORITMO GENÉTICO PURO
+# ALGORITMO GENÉTICO V3
 # =============================
 
 class GeneticAlgorithm:
     def __init__(self, coord, vento, drone,
-                 n_pop=300, n_gen=800, elitismo=0.10,
-                 taxa_mut_inicial=0.05, taxa_mut_final=0.20,
+                 n_pop=100, n_gen=200, elitismo=0.12,
+                 taxa_mut_inicial=0.07, taxa_mut_final=0.35,
                  seed=42, n_workers=None):
         self.coord = coord
         self.vento = vento
@@ -256,18 +257,17 @@ class GeneticAlgorithm:
         self.n_workers = n_workers or max(1, (os.cpu_count() or 2) - 1)
         random.seed(self.seed)
         np.random.seed(self.seed)
+        self.base = [i for i in self.coord.ids if i != 1]
 
     def inicializar_populacao(self):
-        ids = list(self.coord.ids)
-        base = [i for i in ids if i != 1]
         populacao = []
         for _ in range(self.n_pop):
-            perm = random.sample(base, len(base))
+            perm = random.sample(self.base, len(self.base))
             rota = [1] + perm + [1]
-            if random.random() < 0.2:
-                i, j = random.sample(range(1, len(rota)-1), 2)
-                rota[i], rota[j] = rota[j], rota[i]
-            velocidades = [random.choice(self.drone.velocidades) for _ in range(len(rota) - 1)]
+            velocidades = [random.choices(
+                self.drone.velocidades,
+                weights=[0.25]*len(self.drone.velocidades[:-6]) + [0.75]*6,
+                k=1)[0] for _ in range(len(rota) - 1)]
             populacao.append((rota, velocidades))
         return populacao
 
@@ -278,39 +278,46 @@ class GeneticAlgorithm:
             results = [f.result() for f in futures]
         return results
 
-    def selecionar_pais(self, avaliacoes, tournament_k=3):
-        contestants = random.sample(avaliacoes, min(tournament_k, len(avaliacoes)))
-        contestants.sort(reverse=True, key=lambda x: x[0])
-        return contestants[0][1]
+    def selecionar_pais(self, avaliacoes, gen):
+        k = 5 if gen < self.n_gen * 0.25 else 3
+        contestants = random.sample(avaliacoes, min(k, len(avaliacoes)))
+        return max(contestants, key=lambda x: x[0])[1]
 
     def executar(self):
         populacao = self.inicializar_populacao()
         avaliacoes = self.avaliar_populacao_parallel(populacao)
         avaliacoes.sort(reverse=True, key=lambda x: x[0])
 
-        melhor_global = avaliacoes[0][0]
+        melhor_global = avaliacoes[0]
         estagnado = 0
 
-        print("=== INICIANDO ALGORITMO GENÉTICO PURO ===")
+        print("=== INICIANDO AG PURO V3 (DISTÂNCIA + TEMPO) ===")
         for gen in range(self.n_gen):
-            # Mutação adaptativa
             t = gen / (self.n_gen - 1)
             taxa_mut_atual = self.taxa_mut_inicial + t * (self.taxa_mut_final - self.taxa_mut_inicial)
 
-            avaliacoes.sort(reverse=True, key=lambda x: x[0])
-            elite_n = max(2, int(self.elitismo * self.n_pop))
-            # nova_pop = [deepcopy(ind) for _, ind in avaliacoes[:elite_n]]
-            nova_pop = [avaliacoes[0][1]]
+            elite_n = max(5, int(self.elitismo * self.n_pop))
+            nova_pop = [avaliacoes[i][1][:2] for i in range(elite_n)]  # só rota e velocidades
+
+            # Diversidade
+            for _ in range(4):
+                perm = random.sample(self.base, len(self.base))
+                rota = [1] + perm + [1]
+                rota = mutacao_inversao(rota, taxa_mut_atual * 1.8)
+                velocidades = [random.choices(
+                    self.drone.velocidades,
+                    weights=[0.2]*len(self.drone.velocidades[:-6]) + [0.8]*6,
+                    k=1)[0] for _ in range(len(rota)-1)]
+                nova_pop.append((rota, velocidades))
 
             while len(nova_pop) < self.n_pop:
-                p1 = self.selecionar_pais(avaliacoes, tournament_k=3)
-                p2 = self.selecionar_pais(avaliacoes, tournament_k=3)
+                p1 = self.selecionar_pais(avaliacoes, gen)
+                p2 = self.selecionar_pais(avaliacoes, gen)
 
                 filho_rota = ox_crossover(p1[0], p2[0], base_id=1)
                 filho_vels = crossover_velocidades(p1[1], p2[1])
 
-                # Mutação agressiva
-                filho_rota = mutacao_rota_agressiva(filho_rota, taxa_mut_atual)
+                filho_rota = mutacao_inversao(filho_rota, taxa_mut_atual)
                 filho_vels = mutacao_velocidades(filho_vels, taxa_mut_atual, self.drone)
 
                 nova_pop.append((filho_rota, filho_vels))
@@ -319,33 +326,53 @@ class GeneticAlgorithm:
             avaliacoes = self.avaliar_populacao_parallel(populacao)
             avaliacoes.sort(reverse=True, key=lambda x: x[0])
 
-            # Reinício se estagnar
-            if avaliacoes[0][0] > melhor_global:
-                melhor_global = avaliacoes[0][0]
+            if avaliacoes[0][0] > melhor_global[0]:
+                melhor_global = avaliacoes[0]
                 estagnado = 0
             else:
                 estagnado += 1
-                if estagnado > 30:
-                    taxa_mut_atual = min(0.5, taxa_mut_atual * 1.2)
-                else:
-                    taxa_mut_atual = max(self.taxa_mut_inicial, taxa_mut_atual * 0.95)
 
-            print(f"Geração {gen+1:3d}/{self.n_gen} - Melhor fitness: {avaliacoes[0][0]:.6f}")
+            # Reinício catastrófico
+            if estagnado > 40:
+                print(f"\n>>> REINÍCIO INTELIGENTE na G{gen+1} <<<")
+                nova_pop = [melhor_global[1][:2]]
+                for _ in range(self.n_pop - 1):
+                    perm = random.sample(self.base, len(self.base))
+                    rota = [1] + perm + [1]
+                    rota = mutacao_inversao(rota, 0.75)
+                    velocidades = [random.choices(
+                        self.drone.velocidades,
+                        weights=[0.15]*len(self.drone.velocidades[:-6]) + [0.85]*6,
+                        k=1)[0] for _ in range(len(rota)-1)]
+                    nova_pop.append((rota, velocidades))
+                populacao = nova_pop
+                avaliacoes = self.avaliar_populacao_parallel(populacao)
+                avaliacoes.sort(reverse=True, key=lambda x: x[0])
+                estagnado = 0
 
-        print("=== FIM DO AG PURO ===")
-        return avaliacoes[0][1], avaliacoes[0][0]
+            # Log rico
+            best = avaliacoes[0]
+            dist = best[1][2]
+            tempo = best[1][3] / 40  # aproximado
+            print(f"G{gen+1:3d} | Fit: {best[0]:.5f} | "
+                  f"Dist: {dist:.1f}km | Tempo: ~{tempo:.0f}min | "
+                  f"Rec: {best[1][4]} | Stag: {estagnado}")
+
+        print("=== FIM DO AG PURO V3 ===")
+        return melhor_global[1], melhor_global[0]
 
 
 # =============================
-# GERAÇÃO DO CSV FINAL
+# GERAÇÃO DO CSV FINAL (REAL)
 # =============================
 
-def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
-    rota, velocidades = individual
+def gerar_csv_final(info, coord, arquivo_saida="melhor_rota_ag_puro_v3.csv"):
+    rota, velocidades, distancia_total, _, _, recargas = info
     linhas = []
     dia = 1
     hora_atual = datetime.strptime("06:00:00", "%H:%M:%S")
     drone_tempo_pouso = 72
+    recarga_set = {(id_, msg) for id_, msg in recargas}
 
     for i in range(len(rota) - 1):
         id1, id2 = rota[i], rota[i + 1]
@@ -357,7 +384,7 @@ def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
         v_eff = calcular_v_efetiva(velocidade, az, vento_info)
         tempo_voo = int(math.ceil(dist * 3600.0 / max(v_eff, 0.1)))
         hora_final = hora_atual + timedelta(seconds=tempo_voo)
-        pouso = "SIM" if random.random() < 0.3 else "NÃO"
+        pouso = "SIM" if (id1, "RECARGA FORÇADA") in recarga_set else "NÃO"
         linhas.append([
             c1["cep"], c1["lat"], c1["lon"],
             dia, hora_atual.strftime("%H:%M:%S"),
@@ -379,6 +406,7 @@ def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
         ])
         writer.writerows(linhas)
     print(f"\nArquivo CSV gerado: {arquivo_saida}")
+    print(f"Distância total: {distancia_total:.2f} km")
 
 
 # =============================
@@ -386,15 +414,12 @@ def gerar_csv_final(individual, coord, arquivo_saida="melhor_rota.csv"):
 # =============================
 
 if __name__ == "__main__":
-    print("=== OTIMIZAÇÃO DE ROTA DE DRONE (ALGORITMO GENÉTICO PURO) ===\n")
+    print("=== OTIMIZAÇÃO DE ROTA DE DRONE (AG PURO V3) ===\n")
 
-    # Parâmetros otimizados
     arquivo_coordenadas = "coordenadas.csv"
     arquivo_vento = "vento.csv"
-    n_pop = 150
-    n_gen = 300
     seed = 42
-    arquivo_saida = "melhor_rota_ag_puro.csv"
+    arquivo_saida = "melhor_rota_ag_puro_v3.csv"
 
     random.seed(seed)
     np.random.seed(seed)
@@ -404,23 +429,25 @@ if __name__ == "__main__":
     vento = Vento(arquivo_vento)
     drone = Drone()
 
-    print("Iniciando AG PURO...")
+    print("Iniciando AG PURO V3...")
     ga = GeneticAlgorithm(
         coord, vento, drone,
-        n_pop=n_pop, n_gen=n_gen,
-        elitismo=0.10,
-        taxa_mut_inicial=0.05, taxa_mut_final=0.20,
+        n_pop=100, n_gen=200,
+        elitismo=0.12,
+        taxa_mut_inicial=0.07, taxa_mut_final=0.35,
         seed=seed
     )
 
-    melhor_ind, melhor_fit = ga.executar()
+    melhor_info, melhor_fit = ga.executar()
 
-    print("\n" + "="*60)
-    print("MELHOR SOLUÇÃO ENCONTRADA (AG PURO)")
-    print("="*60)
-    print(f"Fitness: {melhor_fit:.6f}")
-    print(f"Rota (IDs): {melhor_ind[0][:10]}... → {melhor_ind[0][-1]}")
-    print(f"Velocidades: {len(melhor_ind[1])} trechos")
-    print("="*60)
+    print("\n" + "="*70)
+    print("MELHOR SOLUÇÃO ENCONTRADA (AG PURO V3)")
+    print("="*70)
+    print(f"Fitness: {melhor_fit:.5f}")
+    print(f"Distância Total: {melhor_info[2]:.2f} km")
+    print(f"Tempo Estimado: ~{melhor_info[3]/40:.0f} min")
+    print(f"Recargas Forçadas: {melhor_info[4]}")
+    print(f"Rota (IDs): {melhor_info[0][:8]}... → {melhor_info[0][-1]}")
+    print("="*70)
 
-    gerar_csv_final(melhor_ind, coord, arquivo_saida)
+    gerar_csv_final(melhor_info, coord, arquivo_saida)
