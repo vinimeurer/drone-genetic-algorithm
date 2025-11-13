@@ -1,0 +1,166 @@
+=== INICIANDO AG PURO V3.1 (OTIMIZADO 2) ===
+G   1 | Fit: 0.17450 | Dist: 3448.2km | Tempo: ~3557min | Rec: 36 | Stag: 1 | T:1.0s
+G  11 | Fit: 0.19397 | Dist: 3208.6km | Tempo: ~3310min | Rec: 33 | Stag: 0 | T:6.9s
+G  21 | Fit: 0.21128 | Dist: 3025.8km | Tempo: ~3118min | Rec: 32 | Stag: 1 | T:12.6s
+G  31 | Fit: 0.23176 | Dist: 2833.9km | Tempo: ~2919min | Rec: 29 | Stag: 0 | T:18.1s
+G  41 | Fit: 0.25026 | Dist: 2675.3km | Tempo: ~2759min | Rec: 28 | Stag: 1 | T:23.6s
+G  51 | Fit: 0.26488 | Dist: 2567.9km | Tempo: ~2645min | Rec: 26 | Stag: 1 | T:29.1s
+G  61 | Fit: 0.28157 | Dist: 2449.0km | Tempo: ~2524min | Rec: 25 | Stag: 0 | T:34.6s
+G  71 | Fit: 0.29962 | Dist: 2329.6km | Tempo: ~2404min | Rec: 25 | Stag: 0 | T:41.2s
+G  81 | Fit: 0.31833 | Dist: 2223.4km | Tempo: ~2290min | Rec: 23 | Stag: 0 | T:47.1s
+G  91 | Fit: 0.33256 | Dist: 2148.7km | Tempo: ~2209min | Rec: 22 | Stag: 0 | T:52.7s
+G 101 | Fit: 0.34860 | Dist: 2063.9km | Tempo: ~2123min | Rec: 22 | Stag: 0 | T:58.2s
+G 111 | Fit: 0.36738 | Dist: 1973.8km | Tempo: ~2029min | Rec: 21 | Stag: 0 | T:63.7s
+G 121 | Fit: 0.38198 | Dist: 1902.2km | Tempo: ~1960min | Rec: 20 | Stag: 1 | T:69.2s
+G 131 | Fit: 0.39085 | Dist: 1865.0km | Tempo: ~1919min | Rec: 19 | Stag: 0 | T:74.6s
+G 141 | Fit: 0.40348 | Dist: 1810.0km | Tempo: ~1864min | Rec: 19 | Stag: 0 | T:80.1s
+G 151 | Fit: 0.42021 | Dist: 1745.5km | Tempo: ~1794min | Rec: 17 | Stag: 0 | T:85.5s
+G 161 | Fit: 0.43613 | Dist: 1680.5km | Tempo: ~1730min | Rec: 17 | Stag: 0 | T:91.0s
+G 171 | Fit: 0.45346 | Dist: 1617.9km | Tempo: ~1664min | Rec: 17 | Stag: 0 | T:96.2s
+G 181 | Fit: 0.46923 | Dist: 1562.7km | Tempo: ~1606min | Rec: 16 | Stag: 0 | T:102.1s
+G 191 | Fit: 0.47622 | Dist: 1536.6km | Tempo: ~1581min | Rec: 16 | Stag: 0 | T:107.7s
+G 201 | Fit: 0.48866 | Dist: 1496.5km | Tempo: ~1538min | Rec: 15 | Stag: 0 | T:113.0s
+G 211 | Fit: 0.49992 | Dist: 1458.1km | Tempo: ~1500min | Rec: 15 | Stag: 0 | T:118.5s
+G 221 | Fit: 0.50921 | Dist: 1429.6km | Tempo: ~1470min | Rec: 15 | Stag: 0 | T:124.1s
+G 231 | Fit: 0.51653 | Dist: 1406.9km | Tempo: ~1446min | Rec: 14 | Stag: 0 | T:130.0s
+G 241 | Fit: 0.52559 | Dist: 1378.7km | Tempo: ~1417min | Rec: 14 | Stag: 0 | T:135.2s
+G 251 | Fit: 0.53800 | Dist: 1340.4km | Tempo: ~1378min | Rec: 14 | Stag: 1 | T:141.1s
+G 261 | Fit: 0.54911 | Dist: 1308.2km | Tempo: ~1344min | Rec: 14 | Stag: 0 | T:146.8s
+G 271 | Fit: 0.55811 | Dist: 1282.6km | Tempo: ~1318min | Rec: 13 | Stag: 0 | T:152.1s
+G 281 | Fit: 0.56765 | Dist: 1254.6km | Tempo: ~1289min | Rec: 13 | Stag: 0 | T:157.7s
+G 291 | Fit: 0.57720 | Dist: 1228.6km | Tempo: ~1262min | Rec: 12 | Stag: 1 | T:163.0s
+G 301 | Fit: 0.58521 | Dist: 1205.0km | Tempo: ~1239min | Rec: 13 | Stag: 0 | T:168.9s
+G 311 | Fit: 0.59470 | Dist: 1180.1km | Tempo: ~1212min | Rec: 12 | Stag: 0 | T:174.5s
+G 321 | Fit: 0.60225 | Dist: 1160.0km | Tempo: ~1191min | Rec: 11 | Stag: 0 | T:180.0s
+G 331 | Fit: 0.61055 | Dist: 1136.8km | Tempo: ~1168min | Rec: 12 | Stag: 0 | T:185.7s
+G 341 | Fit: 0.61506 | Dist: 1125.6km | Tempo: ~1156min | Rec: 11 | Stag: 0 | T:191.2s
+G 351 | Fit: 0.62235 | Dist: 1106.9km | Tempo: ~1136min | Rec: 11 | Stag: 0 | T:197.0s
+G 361 | Fit: 0.62786 | Dist: 1092.5km | Tempo: ~1122min | Rec: 11 | Stag: 0 | T:202.9s
+G 371 | Fit: 0.63638 | Dist: 1069.1km | Tempo: ~1099min | Rec: 11 | Stag: 0 | T:209.2s
+G 381 | Fit: 0.64441 | Dist: 1048.7km | Tempo: ~1078min | Rec: 11 | Stag: 2 | T:215.0s
+G 391 | Fit: 0.65392 | Dist: 1024.8km | Tempo: ~1053min | Rec: 11 | Stag: 0 | T:220.9s
+G 401 | Fit: 0.65999 | Dist: 1009.9km | Tempo: ~1038min | Rec: 10 | Stag: 0 | T:226.7s
+G 411 | Fit: 0.66712 | Dist: 992.4km | Tempo: ~1019min | Rec: 10 | Stag: 0 | T:232.4s
+G 421 | Fit: 0.67121 | Dist: 982.3km | Tempo: ~1009min | Rec: 10 | Stag: 0 | T:245.3s
+G 431 | Fit: 0.67595 | Dist: 971.0km | Tempo: ~997min | Rec: 10 | Stag: 1 | T:252.3s
+G 441 | Fit: 0.68061 | Dist: 959.3km | Tempo: ~985min | Rec: 10 | Stag: 0 | T:258.4s
+G 451 | Fit: 0.68426 | Dist: 950.5km | Tempo: ~976min | Rec: 10 | Stag: 0 | T:266.0s
+G 461 | Fit: 0.68859 | Dist: 939.9km | Tempo: ~965min | Rec: 9 | Stag: 1 | T:273.6s
+G 471 | Fit: 0.69648 | Dist: 920.6km | Tempo: ~946min | Rec: 9 | Stag: 0 | T:281.1s
+G 481 | Fit: 0.70270 | Dist: 905.0km | Tempo: ~930min | Rec: 9 | Stag: 1 | T:290.9s
+G 491 | Fit: 0.70570 | Dist: 898.2km | Tempo: ~923min | Rec: 9 | Stag: 0 | T:297.5s
+G 501 | Fit: 0.71157 | Dist: 883.8km | Tempo: ~908min | Rec: 9 | Stag: 0 | T:304.9s
+G 511 | Fit: 0.71375 | Dist: 880.0km | Tempo: ~903min | Rec: 9 | Stag: 0 | T:313.0s
+G 521 | Fit: 0.71857 | Dist: 867.3km | Tempo: ~891min | Rec: 9 | Stag: 0 | T:319.4s
+G 531 | Fit: 0.72310 | Dist: 856.8km | Tempo: ~880min | Rec: 9 | Stag: 0 | T:328.7s
+G 541 | Fit: 0.72883 | Dist: 842.4km | Tempo: ~866min | Rec: 9 | Stag: 0 | T:336.3s
+G 551 | Fit: 0.73671 | Dist: 824.4km | Tempo: ~847min | Rec: 8 | Stag: 2 | T:343.5s
+G 561 | Fit: 0.73994 | Dist: 816.6km | Tempo: ~839min | Rec: 8 | Stag: 0 | T:350.1s
+G 571 | Fit: 0.74547 | Dist: 803.2km | Tempo: ~826min | Rec: 8 | Stag: 0 | T:357.1s
+G 581 | Fit: 0.74815 | Dist: 797.6km | Tempo: ~819min | Rec: 8 | Stag: 1 | T:364.0s
+G 591 | Fit: 0.75199 | Dist: 788.1km | Tempo: ~810min | Rec: 8 | Stag: 0 | T:371.9s
+G 601 | Fit: 0.75668 | Dist: 776.6km | Tempo: ~799min | Rec: 8 | Stag: 0 | T:378.0s
+G 611 | Fit: 0.76139 | Dist: 765.8km | Tempo: ~787min | Rec: 8 | Stag: 0 | T:384.4s
+G 621 | Fit: 0.76307 | Dist: 762.2km | Tempo: ~783min | Rec: 8 | Stag: 0 | T:391.0s
+G 631 | Fit: 0.76520 | Dist: 758.1km | Tempo: ~778min | Rec: 7 | Stag: 0 | T:397.2s
+G 641 | Fit: 0.76890 | Dist: 748.4km | Tempo: ~769min | Rec: 8 | Stag: 0 | T:404.0s
+G 651 | Fit: 0.77165 | Dist: 743.0km | Tempo: ~763min | Rec: 7 | Stag: 0 | T:411.0s
+G 661 | Fit: 0.77340 | Dist: 738.1km | Tempo: ~758min | Rec: 8 | Stag: 0 | T:417.4s
+G 671 | Fit: 0.77731 | Dist: 729.3km | Tempo: ~749min | Rec: 7 | Stag: 0 | T:423.9s
+G 681 | Fit: 0.78165 | Dist: 719.1km | Tempo: ~739min | Rec: 7 | Stag: 2 | T:431.0s
+G 691 | Fit: 0.78544 | Dist: 710.1km | Tempo: ~729min | Rec: 7 | Stag: 1 | T:437.3s
+G 701 | Fit: 0.78809 | Dist: 703.7km | Tempo: ~723min | Rec: 7 | Stag: 0 | T:443.8s
+G 711 | Fit: 0.78964 | Dist: 700.3km | Tempo: ~719min | Rec: 7 | Stag: 0 | T:450.2s
+G 721 | Fit: 0.79197 | Dist: 694.9km | Tempo: ~714min | Rec: 7 | Stag: 0 | T:456.7s
+G 731 | Fit: 0.79574 | Dist: 684.5km | Tempo: ~705min | Rec: 7 | Stag: 0 | T:463.1s
+G 741 | Fit: 0.80058 | Dist: 674.5km | Tempo: ~693min | Rec: 7 | Stag: 0 | T:469.6s
+G 751 | Fit: 0.80752 | Dist: 657.9km | Tempo: ~676min | Rec: 7 | Stag: 0 | T:475.8s
+G 761 | Fit: 0.80943 | Dist: 653.2km | Tempo: ~672min | Rec: 7 | Stag: 1 | T:482.4s
+G 771 | Fit: 0.81247 | Dist: 647.4km | Tempo: ~664min | Rec: 6 | Stag: 0 | T:489.9s
+G 781 | Fit: 0.81676 | Dist: 636.9km | Tempo: ~654min | Rec: 6 | Stag: 0 | T:496.5s
+G 791 | Fit: 0.81867 | Dist: 632.8km | Tempo: ~649min | Rec: 6 | Stag: 1 | T:502.9s
+G 801 | Fit: 0.82073 | Dist: 627.9km | Tempo: ~644min | Rec: 6 | Stag: 0 | T:508.8s
+G 811 | Fit: 0.82251 | Dist: 623.4km | Tempo: ~640min | Rec: 6 | Stag: 0 | T:515.4s
+G 821 | Fit: 0.82460 | Dist: 618.1km | Tempo: ~635min | Rec: 6 | Stag: 0 | T:521.7s
+G 831 | Fit: 0.82604 | Dist: 614.3km | Tempo: ~631min | Rec: 6 | Stag: 2 | T:527.9s
+G 841 | Fit: 0.82897 | Dist: 608.0km | Tempo: ~624min | Rec: 6 | Stag: 0 | T:535.2s
+G 851 | Fit: 0.83036 | Dist: 604.5km | Tempo: ~621min | Rec: 6 | Stag: 1 | T:542.0s
+G 861 | Fit: 0.83157 | Dist: 601.8km | Tempo: ~618min | Rec: 6 | Stag: 0 | T:549.8s
+G 871 | Fit: 0.83355 | Dist: 597.2km | Tempo: ~613min | Rec: 6 | Stag: 0 | T:558.2s
+G 881 | Fit: 0.83694 | Dist: 587.8km | Tempo: ~605min | Rec: 6 | Stag: 0 | T:564.5s
+G 891 | Fit: 0.83820 | Dist: 585.7km | Tempo: ~601min | Rec: 6 | Stag: 0 | T:571.1s
+G 901 | Fit: 0.84024 | Dist: 580.2km | Tempo: ~596min | Rec: 6 | Stag: 1 | T:577.9s
+G 911 | Fit: 0.84230 | Dist: 576.0km | Tempo: ~591min | Rec: 6 | Stag: 3 | T:584.5s
+G 921 | Fit: 0.84420 | Dist: 570.5km | Tempo: ~587min | Rec: 6 | Stag: 0 | T:595.5s
+G 931 | Fit: 0.84486 | Dist: 569.6km | Tempo: ~585min | Rec: 6 | Stag: 0 | T:605.0s
+G 941 | Fit: 0.84664 | Dist: 565.9km | Tempo: ~581min | Rec: 5 | Stag: 0 | T:615.2s
+G 951 | Fit: 0.85147 | Dist: 552.9km | Tempo: ~569min | Rec: 6 | Stag: 0 | T:622.9s
+G 961 | Fit: 0.85288 | Dist: 550.7km | Tempo: ~565min | Rec: 5 | Stag: 1 | T:629.1s
+G 971 | Fit: 0.85414 | Dist: 547.7km | Tempo: ~562min | Rec: 5 | Stag: 1 | T:635.1s
+G 981 | Fit: 0.85540 | Dist: 544.7km | Tempo: ~559min | Rec: 5 | Stag: 0 | T:641.1s
+G 991 | Fit: 0.85650 | Dist: 541.4km | Tempo: ~556min | Rec: 5 | Stag: 1 | T:647.5s
+G1001 | Fit: 0.85786 | Dist: 538.5km | Tempo: ~553min | Rec: 5 | Stag: 1 | T:653.1s
+G1011 | Fit: 0.85855 | Dist: 536.9km | Tempo: ~551min | Rec: 5 | Stag: 0 | T:659.6s
+G1021 | Fit: 0.85965 | Dist: 533.8km | Tempo: ~548min | Rec: 5 | Stag: 0 | T:665.8s
+G1031 | Fit: 0.86138 | Dist: 529.4km | Tempo: ~544min | Rec: 5 | Stag: 0 | T:671.2s
+G1041 | Fit: 0.86242 | Dist: 527.6km | Tempo: ~541min | Rec: 5 | Stag: 0 | T:677.1s
+G1051 | Fit: 0.86276 | Dist: 525.5km | Tempo: ~540min | Rec: 5 | Stag: 0 | T:682.9s
+G1061 | Fit: 0.86332 | Dist: 524.2km | Tempo: ~539min | Rec: 5 | Stag: 2 | T:689.2s
+G1071 | Fit: 0.86486 | Dist: 521.2km | Tempo: ~535min | Rec: 5 | Stag: 0 | T:694.7s
+G1081 | Fit: 0.86567 | Dist: 518.8km | Tempo: ~533min | Rec: 5 | Stag: 0 | T:700.8s
+G1091 | Fit: 0.86751 | Dist: 514.2km | Tempo: ~528min | Rec: 5 | Stag: 2 | T:707.1s
+G1101 | Fit: 0.86833 | Dist: 512.6km | Tempo: ~526min | Rec: 5 | Stag: 0 | T:712.9s
+G1111 | Fit: 0.86945 | Dist: 509.4km | Tempo: ~523min | Rec: 5 | Stag: 0 | T:718.6s
+G1121 | Fit: 0.87074 | Dist: 506.7km | Tempo: ~520min | Rec: 5 | Stag: 0 | T:724.1s
+G1131 | Fit: 0.87207 | Dist: 503.3km | Tempo: ~516min | Rec: 5 | Stag: 1 | T:730.4s
+G1141 | Fit: 0.87259 | Dist: 502.1km | Tempo: ~515min | Rec: 5 | Stag: 1 | T:737.1s
+G1151 | Fit: 0.87371 | Dist: 498.9km | Tempo: ~512min | Rec: 5 | Stag: 0 | T:744.0s
+G1161 | Fit: 0.87453 | Dist: 497.2km | Tempo: ~510min | Rec: 5 | Stag: 1 | T:750.3s
+G1171 | Fit: 0.87614 | Dist: 492.5km | Tempo: ~506min | Rec: 5 | Stag: 1 | T:757.1s
+G1181 | Fit: 0.87783 | Dist: 488.3km | Tempo: ~502min | Rec: 5 | Stag: 1 | T:763.2s
+G1191 | Fit: 0.87906 | Dist: 485.8km | Tempo: ~498min | Rec: 5 | Stag: 0 | T:769.5s
+G1201 | Fit: 0.87996 | Dist: 483.1km | Tempo: ~496min | Rec: 5 | Stag: 2 | T:775.7s
+G1211 | Fit: 0.88262 | Dist: 476.0km | Tempo: ~489min | Rec: 5 | Stag: 0 | T:782.4s
+G1221 | Fit: 0.88385 | Dist: 473.0km | Tempo: ~486min | Rec: 5 | Stag: 0 | T:789.0s
+G1231 | Fit: 0.88467 | Dist: 471.7km | Tempo: ~484min | Rec: 4 | Stag: 0 | T:795.8s
+G1241 | Fit: 0.88537 | Dist: 469.0km | Tempo: ~482min | Rec: 5 | Stag: 0 | T:802.4s
+G1251 | Fit: 0.88717 | Dist: 465.1km | Tempo: ~477min | Rec: 4 | Stag: 2 | T:808.4s
+G1261 | Fit: 0.88866 | Dist: 461.4km | Tempo: ~473min | Rec: 4 | Stag: 0 | T:814.3s
+G1271 | Fit: 0.88880 | Dist: 461.1km | Tempo: ~473min | Rec: 4 | Stag: 0 | T:820.1s
+G1281 | Fit: 0.88961 | Dist: 458.9km | Tempo: ~471min | Rec: 4 | Stag: 0 | T:826.6s
+G1291 | Fit: 0.89002 | Dist: 457.4km | Tempo: ~469min | Rec: 4 | Stag: 1 | T:833.4s
+G1301 | Fit: 0.89082 | Dist: 455.3km | Tempo: ~467min | Rec: 4 | Stag: 0 | T:840.5s
+G1311 | Fit: 0.89130 | Dist: 454.4km | Tempo: ~466min | Rec: 4 | Stag: 0 | T:847.3s
+G1321 | Fit: 0.89285 | Dist: 449.7km | Tempo: ~462min | Rec: 4 | Stag: 0 | T:853.9s
+G1331 | Fit: 0.89395 | Dist: 447.3km | Tempo: ~459min | Rec: 4 | Stag: 2 | T:860.4s
+G1341 | Fit: 0.89514 | Dist: 444.1km | Tempo: ~456min | Rec: 4 | Stag: 0 | T:866.6s
+G1351 | Fit: 0.89600 | Dist: 441.6km | Tempo: ~453min | Rec: 4 | Stag: 0 | T:873.7s
+G1361 | Fit: 0.89626 | Dist: 440.8km | Tempo: ~453min | Rec: 4 | Stag: 0 | T:880.4s
+G1371 | Fit: 0.89680 | Dist: 439.6km | Tempo: ~451min | Rec: 4 | Stag: 1 | T:886.9s
+G1381 | Fit: 0.89754 | Dist: 437.6km | Tempo: ~449min | Rec: 4 | Stag: 0 | T:894.2s
+G1391 | Fit: 0.89808 | Dist: 436.4km | Tempo: ~448min | Rec: 4 | Stag: 1 | T:900.5s
+G1401 | Fit: 0.89890 | Dist: 434.2km | Tempo: ~446min | Rec: 4 | Stag: 0 | T:907.1s
+G1411 | Fit: 0.90001 | Dist: 431.2km | Tempo: ~443min | Rec: 4 | Stag: 1 | T:913.4s
+G1421 | Fit: 0.90191 | Dist: 425.9km | Tempo: ~437min | Rec: 4 | Stag: 1 | T:918.9s
+G1431 | Fit: 0.90306 | Dist: 422.9km | Tempo: ~434min | Rec: 4 | Stag: 0 | T:924.6s
+G1441 | Fit: 0.90348 | Dist: 421.8km | Tempo: ~433min | Rec: 4 | Stag: 0 | T:930.6s
+G1451 | Fit: 0.90441 | Dist: 419.1km | Tempo: ~430min | Rec: 4 | Stag: 0 | T:937.0s
+G1461 | Fit: 0.90534 | Dist: 416.9km | Tempo: ~428min | Rec: 4 | Stag: 0 | T:943.7s
+G1471 | Fit: 0.90606 | Dist: 415.0km | Tempo: ~426min | Rec: 4 | Stag: 0 | T:950.3s
+G1481 | Fit: 0.90682 | Dist: 412.9km | Tempo: ~424min | Rec: 4 | Stag: 0 | T:956.3s
+G1491 | Fit: 0.90712 | Dist: 412.1km | Tempo: ~423min | Rec: 4 | Stag: 1 | T:962.8s
+G1500 | Fit: 0.90734 | Dist: 411.7km | Tempo: ~422min | Rec: 4 | Stag: 5 | T:968.3s
+=== FIM DO AG PURO V3.1 (OTIMIZADO) ===
+
+======================================================================
+MELHOR SOLUÇÃO ENCONTRADA (AG PURO V3.1 OTIMIZADO)
+======================================================================
+Fitness: 0.90734
+Distância Total: 411.66 km
+Tempo Estimado: ~422 min
+Recargas Forçadas: 4
+Rota (IDs): [1, 241, 344, 277, 88, 162, 137, 253]... → 1
+======================================================================
+
+Arquivo CSV gerado: rota_pmx.csv
+Distância total: 411.66 km
