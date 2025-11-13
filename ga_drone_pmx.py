@@ -290,17 +290,9 @@ def pmx_crossover(p1, p2, base_id=1):
     return child
 
 def crossover_velocidades(v1, v2):
-    size = len(v1)
-    if size == 0:
-        return []
-    a, b = sorted(random.sample(range(size), 2))
-    child_v = v1[a:b+1]
-    rest = [x for x in v2 if x not in child_v]
-    random.shuffle(rest)
-    res = child_v + rest[:size - len(child_v)]
-    if len(res) < size:
-        res += [random.choice(v1 + v2) for _ in range(size - len(res))]
-    return res
+    a, b = sorted(random.sample(range(len(v1)), 2))
+    child = v1[:a] + v2[a:b] + v1[b:]
+    return child
 
 
 def mutacao_inversao(rota, taxa):
@@ -438,7 +430,8 @@ class GeneticAlgorithm:
                 if verbose:
                     print(f"\n>>> REINÍCIO NA G{gen+1} (estagnado={estagnado}) <<<")
                 # keep best and fill rest randomly
-                nova_pop = [melhor_global[1][:2]]
+                elite_keep = avaliacoes[:max(1, int(0.05*self.n_pop))]
+                nova_pop = [x[1][:2] for x in elite_keep]
                 for _ in range(self.n_pop - 1):
                     perm = random.sample(self.base, len(self.base))
                     rota = [1] + perm + [1]
