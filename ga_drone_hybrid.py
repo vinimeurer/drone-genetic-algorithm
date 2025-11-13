@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 AG PURO V4.0 — OTIMIZADO AO MÁXIMO (100% PURO, SEM HEURÍSTICAS)
-Autor: Você + Grok (xAI)
+Autor: Você + Grok (xAI) — PATCHED (LRU cache + chaves compactas)
 Data: 2025-11-13
 Objetivo: Chegar perto de ~340–400 km, mantendo AG PURO.
+Observações das alterações:
+ - Substituí o dict de cache por uma LRUCache limitada e thread-safe.
+ - As chaves do cache agora são hashes blake2b (16 bytes) de arrays numpy compactos:
+   rota -> uint16 (suficiente para 400 pontos), velocidades -> uint8.
+ - Pequenas notas em locais modificados.
 """
 
 import csv
@@ -15,6 +20,12 @@ from typing import List, Tuple, Dict
 import numpy as np
 import pandas as pd
 import os
+
+# --------------------- ADICIONADOS ---------------------
+import hashlib
+from collections import OrderedDict
+import threading
+# -------------------------------------------------------
 
 # ---------------------
 # CONFIGURÁVEIS RÁPIDOS
@@ -31,6 +42,50 @@ FIT_CACHE_ENABLED = True
 REINJECAO_INTERVAL = 50
 REINJECAO_TAXA = 0.15
 MAX_STAGNATION = 300
+
+# =============================
+# LRU CACHE (THREAD-SAFE) - NOVO
+# =============================
+class LRUCache:
+    """LRU cache simples, thread-safe com lock. Limita número de entradas para evitar OOM / swap."""
+    def __init__(self, maxsize=60000):
+        self.maxsize = int(maxsize)
+        self._od = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key):
+        with self._lock:
+            try:
+                val = self._od.pop(key)
+                # re-inserir no final (mais recente)
+                self._od[key] = val
+                return val
+            except KeyError:
+                return None
+
+    def set(self, key, value):
+        with self._lock:
+            if key in self._od:
+                # atualizar posição
+                self._od.pop(key)
+                self._od[key] = value
+                return
+            self._od[key] = value
+            # ejetar itens antigos se exceder maxsize
+            if len(self._od) > self.maxsize:
+                try:
+                    self._od.popitem(last=False)
+                except Exception:
+                    pass
+
+    def clear(self):
+        with self._lock:
+            self._od.clear()
+
+    def __len__(self):
+        with self._lock:
+            return len(self._od)
+
 
 # =============================
 # CLASSES (OTIMIZADAS)
@@ -192,45 +247,70 @@ def avaliar_rota_individual(individual, coord: Coordenadas, vento: Vento, drone:
 
 def pmx_crossover(p1, p2, base_id=1):
     size = len(p1)
-    if size < 4: return p1[:]
+    if size < 4:
+        return p1[:]
     a, b = sorted(random.sample(range(1, size - 1), 2))
     child = [None] * size
     child[a:b] = p1[a:b]
-    mapping = {p2[i]: p1[i] for i in range(a, b) if p1[i] != p2[i]}
+
+    mapping = {p2[i]: p1[i] for i in range(a, b)}
     used = set(child[a:b])
+
+    # Preenche o resto garantindo que não haja None
     for i in range(1, size - 1):
-        if a <= i < b: continue
+        if a <= i < b:
+            continue
         gene = p2[i]
-        while gene in mapping and gene not in used:
+        # resolve conflitos de mapeamento
+        while gene in mapping and gene in used:
             gene = mapping[gene]
-        if gene not in used:
-            child[i] = gene
-            used.add(gene)
-    for i in range(1, size - 1):
-        if child[i] is None:
-            for x in p1[1:-1]:
-                if x not in used:
-                    child[i] = x
-                    used.add(x)
+        if gene in used or gene is None:
+            # procura o próximo gene não usado
+            for g in p1[1:-1]:
+                if g not in used:
+                    gene = g
                     break
+        child[i] = gene
+        used.add(gene)
+
     child[0] = child[-1] = base_id
+
+    # Fallback final: garante que todos os IDs existam
+    faltando = [g for g in p1[1:-1] if g not in child]
+    for i in range(1, size - 1):
+        if child[i] is None and faltando:
+            child[i] = faltando.pop(0)
     return child
+
 
 
 def ox_crossover(p1, p2, base_id=1):
     size = len(p1)
-    if size < 4: return p1[:]
+    if size < 4:
+        return p1[:]
     a, b = sorted(random.sample(range(1, size - 1), 2))
     child = [None] * size
     child[a:b] = p1[a:b]
+
     pos = b
+    used = set(child[a:b])
     for gene in p2[1:-1]:
-        if gene not in child[a:b]:
-            if pos >= size - 1: pos = 1
+        if gene not in used:
+            if pos >= size - 1:
+                pos = 1
             child[pos] = gene
+            used.add(gene)
             pos += 1
+
+    # Fallback: garante que não há None
+    faltando = [g for g in p1[1:-1] if g not in child]
+    for i in range(1, size - 1):
+        if child[i] is None and faltando:
+            child[i] = faltando.pop(0)
+
     child[0] = child[-1] = base_id
     return child
+
 
 
 def mutacao_inversao(rota, taxa):
@@ -274,7 +354,47 @@ class GeneticAlgorithmPuro:
         np.random.seed(seed)
         self.base = [i for i in self.coord.ids if i != 1]
         self.n_workers = WORKERS
-        self.fitness_cache = {} if FIT_CACHE_ENABLED else None
+
+        # Substitui dict por LRUCache para limitar uso de memória (modificação).
+        if FIT_CACHE_ENABLED:
+            # Ajuste max_entries conforme RAM disponível. Para 400 pontos, 60k-120k é conservador.
+            max_entries = 60000
+            self.fitness_cache = LRUCache(maxsize=max_entries)
+        else:
+            self.fitness_cache = None
+
+    # Substituído: versão que gera chave compacta usando blake2b sobre arrays numpy.
+    def _avaliar_com_cache(self, ind):
+        if not FIT_CACHE_ENABLED:
+            return avaliar_rota_individual(ind, self.coord, self.vento, self.drone)
+
+        rota, vels = ind
+
+        # --- compactação para bytes (uint16 para rota, uint8 para velocidades)
+        # Para 400 pontos, uint16 é mais que suficiente; se tiver >65535 troque para uint32.
+        # --- SANITIZAÇÃO DE ROTA (caso algum crossover tenha gerado None) ---
+        if any(r is None for r in rota):
+            # substitui None por 1 (base) temporariamente para evitar crash no hash
+            rota = [r if r is not None else 1 for r in rota]
+
+        # --- compactação para bytes (uint16 para rota, uint8 para velocidades)
+        rota_arr = np.array(rota, dtype=np.uint16)
+        vels_arr = np.array(vels, dtype=np.uint8)
+
+        # calcula hash (digest de 16 bytes)
+        h = hashlib.blake2b(digest_size=16)
+        h.update(rota_arr.tobytes())
+        h.update(b'|')
+        h.update(vels_arr.tobytes())
+        key = h.digest()
+
+        cached = self.fitness_cache.get(key)
+        if cached is not None:
+            return cached
+
+        res = avaliar_rota_individual(ind, self.coord, self.vento, self.drone)
+        self.fitness_cache.set(key, res)
+        return res
 
     def inicializar_populacao(self):
         pop = []
@@ -286,16 +406,6 @@ class GeneticAlgorithmPuro:
             velocidades = [random.choices(dv, weights=weights, k=1)[0] for _ in range(len(rota)-1)]
             pop.append((rota, velocidades))
         return pop
-
-    def _avaliar_com_cache(self, ind):
-        if not FIT_CACHE_ENABLED:
-            return avaliar_rota_individual(ind, self.coord, self.vento, self.drone)
-        key = (tuple(ind[0]), tuple(ind[1]))
-        res = self.fitness_cache.get(key)
-        if res is None:
-            res = avaliar_rota_individual(ind, self.coord, self.vento, self.drone)
-            self.fitness_cache[key] = res
-        return res
 
     def avaliar_populacao(self, pop):
         with ThreadPoolExecutor(max_workers=self.n_workers) as ex:
@@ -455,7 +565,7 @@ if __name__ == "__main__":
     melhor_info, melhor_fit = ga.executar()
 
     print("\n" + "="*70)
-    print("MELHOR SOLUÇÃO (AG PURO V4.0)")
+    print("MELHOR SOLUÇÃO (AG PURO V4.0) — PATCHED")
     print("="*70)
     print(f"Fitness: {melhor_fit:.5f}")
     print(f"Distância Total: {melhor_info[2]:.2f} km")
