@@ -490,7 +490,7 @@ if __name__ == "__main__":
     arquivo_coordenadas = "coordenadas.csv"
     arquivo_vento = "vento.csv"
     seed = SEED
-    arquivo_saida = "melhor_rota_ag_puro_v3_1_optimized.csv"
+    arquivo_saida = "rota_ox.csv"
 
     random.seed(seed)
     np.random.seed(seed)
