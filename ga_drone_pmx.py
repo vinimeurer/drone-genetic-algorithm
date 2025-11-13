@@ -23,18 +23,63 @@ import numpy as np
 import pandas as pd
 import os
 
+import hashlib
+from collections import OrderedDict
+import threading
+
 # ---------------------
 # CONFIGURÁVEIS RÁPIDOS
 # ---------------------
-DEFAULT_N_POP = 200
-DEFAULT_N_GEN = 500
+DEFAULT_N_POP = 500
+DEFAULT_N_GEN = 1500
 DEFAULT_ELITISMO = 0.04
 DEFAULT_TAXA_MUT_INI = 0.07
 DEFAULT_TAXA_MUT_FIN = 0.35
-LOG_INTERVAL = 1           # exibe log a cada N gerações (reduce printing overhead)
+LOG_INTERVAL = 10           # exibe log a cada N gerações (reduce printing overhead)
 WORKERS = max(2, (os.cpu_count() or 2) - 1)
 FIT_CACHE_ENABLED = True   # guarda fitness de indivíduos avaliados (útil)
 SEED = 42
+
+# =============================
+# LRU CACHE (THREAD-SAFE)
+# =============================
+class LRUCache:
+    """LRU simples e thread-safe para limitar o tamanho do cache de fitness."""
+    def __init__(self, maxsize=60000):
+        self.maxsize = int(maxsize)
+        self._od = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key):
+        with self._lock:
+            try:
+                val = self._od.pop(key)
+                self._od[key] = val
+                return val
+            except KeyError:
+                return None
+
+    def set(self, key, value):
+        with self._lock:
+            if key in self._od:
+                # atualiza posição
+                self._od.pop(key)
+                self._od[key] = value
+                return
+            self._od[key] = value
+            if len(self._od) > self.maxsize:
+                try:
+                    self._od.popitem(last=False)
+                except Exception:
+                    pass
+
+    def clear(self):
+        with self._lock:
+            self._od.clear()
+
+    def __len__(self):
+        with self._lock:
+            return len(self._od)
 
 # =============================
 # CLASSES E FUNÇÕES - LIMPAS
@@ -338,7 +383,11 @@ class GeneticAlgorithm:
         self.n_workers = n_workers
         self.max_stagnation = max_stagnation
         self.log_interval = log_interval
-        self.fitness_cache = {} if FIT_CACHE_ENABLED else None
+        if FIT_CACHE_ENABLED:
+            max_entries = 60000  # ajuste conforme RAM (50k-120k)
+            self.fitness_cache = LRUCache(maxsize=max_entries)
+        else:
+            self.fitness_cache = None
 
     def inicializar_populacao(self):
         populacao = []
@@ -353,15 +402,33 @@ class GeneticAlgorithm:
         return populacao
 
     def _avaliar_com_cache(self, individual):
-        if not FIT_CACHE_ENABLED:
+        if not FIT_CACHE_ENABLED or self.fitness_cache is None:
             return avaliar_rota_individual(individual, self.coord, self.vento, self.drone)
-        # key: compact representation
+
         rota, vels = individual
-        key = (tuple(rota), tuple(vels))
-        res = self.fitness_cache.get(key)
-        if res is None:
-            res = avaliar_rota_individual(individual, self.coord, self.vento, self.drone)
-            self.fitness_cache[key] = res
+
+        # sanitize: garante que não há None na rota/vels (caso algo quebre em crossover)
+        if any(r is None for r in rota):
+            rota = [r if r is not None else 1 for r in rota]
+        if any(v is None for v in vels):
+            vels = [int(v if v is not None else self.drone.velocidades[0]) for v in vels]
+
+        # compacta rota (uint16 é suficiente para 400 pontos) e velocidades (uint8)
+        rota_arr = np.array(rota, dtype=np.uint16)
+        vels_arr = np.array(vels, dtype=np.uint8)
+
+        h = hashlib.blake2b(digest_size=16)
+        h.update(rota_arr.tobytes())
+        h.update(b'|')
+        h.update(vels_arr.tobytes())
+        key = h.digest()  # 16 bytes
+
+        cached = self.fitness_cache.get(key)
+        if cached is not None:
+            return cached
+
+        res = avaliar_rota_individual(individual, self.coord, self.vento, self.drone)
+        self.fitness_cache.set(key, res)
         return res
 
     def avaliar_populacao_parallel(self, populacao):
