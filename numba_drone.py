@@ -291,40 +291,6 @@ def avaliar_rota_individual(individual, coord: Coordenadas, vento: Vento, drone:
 # =============================
 # OPERADORES GENÉTICOS (ROBUSTOS)
 # =============================
-def ox_crossover(p1, p2, base_id=1):
-    size = len(p1)
-    if size < 4:
-        return p1[:]
-    a, b = sorted(random.sample(range(1, size - 1), 2))
-    child = [None] * size
-    # copy slice
-    child[a:b] = p1[a:b]
-    pos = b
-    used = set(child[a:b])
-    for gene in p2[1:-1]:
-        if gene not in used:
-            if pos >= size - 1:
-                pos = 1
-            child[pos] = gene
-            used.add(gene)
-            pos += 1
-    # fallback: fill remaining with genes from p1 that are not used
-    faltando = [g for g in p1[1:-1] if g not in used]
-    for i in range(1, size - 1):
-        if child[i] is None:
-            if faltando:
-                child[i] = faltando.pop(0)
-            else:
-                # as last resort, pick any id from p1 that isn't present
-                for g in p1[1:-1]:
-                    if g not in child:
-                        child[i] = g
-                        break
-    child[0] = base_id
-    child[-1] = base_id
-    return child
-
-
 def pmx_crossover(p1, p2, base_id=1):
     size = len(p1)
     if size < 4:
