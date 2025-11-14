@@ -43,8 +43,8 @@ except Exception:
 # ---------------------
 # CONFIGURÁVEIS RÁPIDOS
 # ---------------------
-DEFAULT_N_POP = 500
-DEFAULT_N_GEN = 1500
+DEFAULT_N_POP = 300
+DEFAULT_N_GEN = 2000
 DEFAULT_ELITISMO = 0.04
 DEFAULT_TAXA_MUT_INI = 0.07
 DEFAULT_TAXA_MUT_FIN = 0.35
@@ -798,7 +798,17 @@ if __name__ == "__main__":
     print(f"Rota (IDs): {melhor_info[0][:8]}... → {melhor_info[0][-1]}")
     print("="*70)
 
-    gerar_csv_final(melhor_info, coord, vento, arquivo_saida)
+    def reavaliar(individual, coord, vento, drone):
+        # individual = (rota, velocidades, distancia, custo, pousos, recargas)
+        rota = individual[0]
+        vels = individual[1]
+        fit, info = avaliar_rota_individual((rota, vels), coord, vento, drone)
+        return fit, info
+    
+
+    fit_reaval, info_reaval = reavaliar(melhor_info, coord, vento, drone)
+
+    gerar_csv_final(info_reaval, coord, vento, arquivo_saida)
 
     # Summary about acceleration
     if NUMBA_AVAILABLE:
