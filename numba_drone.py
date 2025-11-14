@@ -26,12 +26,6 @@ import os
 import numpy as np
 import pandas as pd
 
-# Optional: psutil for memory monitoring
-try:
-    import psutil
-except Exception:
-    psutil = None
-
 # Optional: Numba (fortemente recomendado para grandes execuções)
 try:
     import numba
@@ -690,12 +684,7 @@ class GeneticAlgorithm:
                 dist = best[1][2]
                 tempo = best[1][3] / 40.0
                 elapsed = time.time() - start_time
-                # optional memory print
-                mem_str = ""
-                if psutil:
-                    pinfo = psutil.Process(os.getpid()).memory_info()
-                    mem_str = f" | RSS:{pinfo.rss//1024//1024}MB"
-                print(f"G{gen+1:4d} | Fit: {best[0]:.5f} | Dist: {dist:.1f}km | Tempo: ~{tempo:.0f}min | Rec: {best[1][4]} | Stag: {estagnado} | T:{elapsed:.1f}s{mem_str}")
+                print(f"G{gen+1:4d} | Fit: {best[0]:.5f} | Dist: {dist:.1f}km | Tempo: ~{tempo:.0f}min | Rec: {best[1][4]} | Stag: {estagnado} | T:{elapsed:.1f}s")
 
         if verbose:
             print("=== FIM DO AG PURO V4.1 ===")
