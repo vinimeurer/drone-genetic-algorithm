@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-csv_path = "output_claude4.5.csv"
+csv_path = "rota.csv"
 
 # lê o CSV
 df = pd.read_csv(csv_path)
