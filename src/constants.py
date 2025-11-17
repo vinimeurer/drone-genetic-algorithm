@@ -1,0 +1,22 @@
+# src/constants.py
+from typing import List
+import numpy as np
+import os
+
+# Defaults
+DEFAULT_N_POP = 300
+DEFAULT_N_GEN = 2000
+DEFAULT_ELITISMO = 0.04
+DEFAULT_TAXA_MUT_INI = 0.07
+DEFAULT_TAXA_MUT_FIN = 0.35
+LOG_INTERVAL = 10
+WORKERS = max(1, (os.cpu_count() or 2) - 1)
+FIT_CACHE_MAX_ENTRIES = 200_000
+FIT_CACHE_DIGEST_BYTES = 8
+SEED = 42
+MAX_STAGNATION = 300
+
+DRONE_VELOCIDADES = [36, 44, 52, 60, 68, 76, 84, 92]
+
+AZIMUTE_BIN = 10
+AZIMUTE_BINS = np.arange(0, 360, AZIMUTE_BIN, dtype=np.float32)
