@@ -19,7 +19,7 @@ def main():
     melhor_info, melhor_fit = ga.executar()
 
     print("\n" + "=" * 70)
-    print("MELHOR SOLUÇÃO (v5.1)")
+    print("MELHOR SOLUÇÃO ENCONTRADA")
     print("=" * 70)
     print(f"Fitness: {melhor_fit:.5f}")
     print(f"Distância: {melhor_info[2]:.2f} km")
@@ -27,7 +27,7 @@ def main():
     print(f"Recargas: {melhor_info[4]}")
     print("=" * 70)
 
-    print("Reavaliando com precisão total (vento real, sem discretização)...")
+    #print("Reavaliando melhor rota...")
 
     fit_preciso, info_precisa = reavaliar_preciso(melhor_info, coord, vento, drone)
 
@@ -41,7 +41,6 @@ def main():
     # print("=" * 70)
 
     gerar_csv_final(info_precisa, coord, vento, "rota.csv")
-    print("CSV final gerado: rota.csv")
 
 if __name__ == "__main__":
     main()

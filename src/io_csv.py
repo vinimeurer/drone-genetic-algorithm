@@ -102,8 +102,8 @@ def gerar_csv_final(info, coord: Coordenadas, vento: Vento, arquivo_saida: str =
         hora_final = hora_atual_seg + tempo_voo
         pouso = "SIM" if (id1, "RECARGA FORÇADA") in recarga_set else "NÃO"
         linhas.append([
-            c1["cep"], c1["lat"], c1["lon"], dia, s2hms(hora_atual_seg),
-            v, c2["cep"], c2["lat"], c2["lon"], pouso, s2hms(hora_final)
+            int(c1["cep"]), c1["lat"], c1["lon"], dia, s2hms(hora_atual_seg),
+            v, int(c2["cep"]), c2["lat"], c2["lon"], pouso, s2hms(hora_final)
         ])
         hora_atual_seg = hora_final + 72
         if hora_atual_seg >= 19 * 3600:
@@ -116,4 +116,3 @@ def gerar_csv_final(info, coord: Coordenadas, vento: Vento, arquivo_saida: str =
                          "Velocidade", "CEP_final", "Latitude_final", "Longitude_final", "Pouso", "Hora_final"])
         writer.writerows(linhas)
     print(f"\nArquivo gerado: {arquivo_saida}")
-    print(f"Distância total: {distancia_total:.2f} km")
