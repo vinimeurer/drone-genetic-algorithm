@@ -1,19 +1,18 @@
-# 📦 **GA Drone Routing — Otimização de Rotas com Algoritmo Genético**
+# Documentação do Projeto - Drone Genetic Algorithm
 
-Este projeto implementa um **Algoritmo Genético (AG)** de alta performance para otimizar rotas de drones considerando:
+## Visão Geral
 
-* Distâncias geográficas reais (Haversine)
-* Azimutes entre pontos
-* Condições de vento reais por dia e hora
-* Diferentes velocidades de voo
-* Autonomia, tempo de pouso e efeitos aerodinâmicos no cálculo de velocidade efetiva
-* Penalidades por pousos forçados e limitações de horário de operação
+Este projeto implementa um **Algoritmo Genético** para otimizar rotas de drones, considerando fatores como distância, tempo de voo, velocidade do vento e necessidade de recargas. O sistema lê dados de coordenadas e velocidade do vento, executa a otimização e gera uma rota otimizada em CSV.
 
-O objetivo é encontrar a **melhor rota possível**, minimizando custo total e penalidades, e gerar um **CSV final detalhando o plano de voo**. Mais detahes sobre o funcionamento do projeto estão descritos no [arquivo PDF](drone-ga.pdf).
+## Objetivos
 
----
+- Otimizar rotas de drones usando algoritmo genético
+- Minimizar distância total percorrida
+- Considerar fatores ambientais (vento)
+- Gerenciar necessidade de recargas da bateria
+- Gerar rotas em formato CSV para análise
 
-# 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 drone-genetic-algorithm/
@@ -46,219 +45,289 @@ drone-genetic-algorithm/
 └── requirements.txt
 ```
 
+## Componentes Principais
 
-# 🚀 **Como funciona o projeto**
+### `src/coordenadas.py`
+Gerencia dados de coordenadas geográficas dos pontos de interesse.
+- Carrega coordenadas de CSV
+- Calcula distâncias entre pontos
+- Valida dados de entrada
 
-## 🔹 **1. Leitura dos dados**
+### `src/drone.py`
+Define as características e comportamento do drone.
+- Velocidade máxima
+- Capacidade de bateria
+- Consumo de energia
 
-* `coordenadas.csv` contém CEP, latitude e longitude dos pontos a serem visitados.
-* `vento.csv` contém velocidade e direção do vento por dia e hora.
+### `src/vento.py`
+Gerencia dados de velocidade e direção do vento.
+- Carrega dados de vento por hora
+- Fornece velocidade efetiva considerando o vento
 
-A classe `Coordenadas`(`src/coordenadas.py`) constrói:
+### `src/ga.py`
+Implementa o **Algoritmo Genético**.
+- População inicial
+- Seleção
+- Crossover e mutação
+- Critério de parada
 
-* Matriz de distâncias Haversine
-* Matriz de azimutes entre pares de pontos
+### `src/evaluator.py`
+Avalia a qualidade de cada rota (fitness).
+- Distância total
+- Tempo de voo
+- Número de recargas
+- Velocidade efetiva com vento
 
+### `src/utils.py`
+Funções utilitárias gerais.
+- Cálculos matemáticos
+- Manipulação de dados
 
-
-A classe `Vento`(`src/vento.py`):
-
-* Gera uma matriz `[dias × horas × (velocidade, direção)]`
-
-
-## 🔹 **2. Modelagem do drone (`src/drone.py`)**
-
-A classe `Drone` define:
-
-* Autonomia
-* Fator de correção local
-* Velocidades disponíveis
-* Tempo de pouso
-
-
-
-
-## 🔹 **3. Tabela de velocidade efetiva (vento + direção)**
-
-O módulo `v_eff.py` computa, via **Numba**, o impacto do vento:
-
-> velocidade efetiva = velocidade própria + componente do vento
-
-Gerando uma tabela indexada por:
-
-* velocidade
-* faixa de azimutes
-* dia × hora
+### `src/io_csv.py`
+Leitura e escrita de dados em CSV.
+- Carregamento de dados
+- Escrita de resultados
 
 
-## 🔹 **4. Avaliação de rotas (`src/evaluator.py`)**
 
-A função acelerada `avaliar_lote_numba` calcula:
+## Como executar
 
-* Distância total
-* Penalidades
-* Autonomia e pousos forçados
-* Tempo total
-* Fitness da solução
+1. **Crie um ambiente virtual (recomendado)**
 
-## 🔹 **5. Algoritmo Genético (`src/ga.py`)**
+    - Linux/Mac:
+        ```bash
+        python -m venv venv
+        ```
 
-* Geração inicial de população
-* Crossover PMX para rotas
-* Mutação por inversão
-* Mutação de velocidades
-* Elitismo
-* Reavaliação com cache LRU
-* Restart automático
-* Execução paralela com ThreadPool
+    - Windows:
+        ```bash
+        python -m venv venv
+        ```
 
----
+2. **Ative o ambiente virtual:**
 
-## 🔹 **6. Reavaliação precisa & geração do CSV final**
+    - Linux/Mac:
+        ```bash
+        source venv/bin/activate
+        ```
 
-Após o AG encontrar a melhor solução, ocorre:
+    - Windows:
+        ```bash
+        venv\Scripts\activate
+        ```
 
-1. **Reavaliação precisa** sem discretizar vento
-   (`reavaliar_preciso`)
 
-2. **Geração da rota final detalhada**
-   (`gerar_csv_final`) contendo:
 
-   * CEP início / fim
-   * lat/lon
-   * dia e hora
-   * velocidade
-   * tempo de voo
-   * marcação de pouso forçado
+3. **Instalar as dependências**
 
-Arquivo gerado: `rota.csv`.
+    Execute o cmando abaixo para instalar as dependências necessárias para o projeto: 
 
----
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-# 🛠️ Instalação
+4. **Configurar parâmetros (opcional)**
 
-### 1. Criar ambiente virtual
+    - Caso queira executar o código com parâmetros diferentes do padrão (numero diferente de gerações, população, taxa de mutação, etc) edite o arquivo `constants.py` localizado no diretório `/src`.
 
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-```
+5. **Executar o script principal**
 
-### 2. Instalar dependências
+    Na raiz do projeto, execute o comando:
 
-```bash
-pip install -r requirements.txt
-```
+    ```bash
+    python run.py
+    ```
 
----
+6. **Verifique o output** 
+   Após o término da exeução, será mostrado o log
 
-# ▶️ Execução
+   ```bash
+   ======================================================================
+   MELHOR SOLUÇÃO ENCONTRADA
+   ======================================================================
+   Fitness: 0.90643
+   Distância: 412.40 km
+   Tempo: ~425 min
+   Recargas: 5
+   ======================================================================
 
-Basta executar:
+   Arquivo gerado: rota.csv
+   Distância total: 412.40 km
+   ```
 
-```bash
-python run.py
-```
+   Verifique a rota gerada na raiz no projeto, no arquivo `rota.csv`.
 
-Certifique-se de que os arquivos:
+7. **Plotar o gráfico (opcional)**
 
-* `coordenadas.csv`
-* `vento.csv`
+   Caso queira visualizar a rota de maneira gráfica, xecute o comando abaixo:
 
-estão no diretório raiz do projeto.
+   ```bash
+   python plot.py
+   ```
 
----
+   Será gerada uma guia com o gráfico das rotas.
 
-# 🧪 Testes
+## Testes
 
-A suíte de testes abrange absolutamente todas as partes do sistema.
+Testes disponíveis:
+- `test_coordenadas.py` - Validação de coordenadas
+- `test_drone.py` - Comportamento do drone
+- `test_vento.py` - Dados de vento
+- `test_evaluator.py` - Cálculo de fitness
+- `test_ga.py` - Algoritmo genético
+- `test_io_csv.py` - Leitura/escrita de CSV
+- `test_utils.py` - Funções utilitárias
+- `test_v_eff.py` - Velocidade efetiva
 
-Rodar com:
-
-```bash
-pytest -v
-```
-
-ou, para medir cobertura:
+Execute os testes unitários com pytest, medindo a cobertura:
 
 ```bash
 pytest --cov=src --cov-report term-missing
 ```
 
----
+Ou execute testes específicos:
 
-# 📤 Formato dos arquivos de entrada
-
-## **coordenadas.csv**
-
-```
-cep,latitude,longitude
-80000-000,-25.43,-49.27
-...
+```bash
+pytest tests/test_coordenadas.py -v
+pytest tests/test_drone.py -v
+pytest tests/test_evaluator.py -v
 ```
 
-## **vento.csv**
+### Fluxo de Execução
 
+1. **Carregamento de dados**: Lê `coordenadas.csv` e `vento.csv`
+2. **Inicialização**: Cria instâncias de Drone, Coordenadas e Vento
+3. **Algoritmo Genético**: Executa otimização iterativa
+4. **Reavaliação**: Valida melhor solução encontrada
+5. **Saída**: Gera `rota.csv` com a rota otimizada
+
+## 📊 Formato dos Dados
+
+### `coordenadas.csv`
+```csv
+cep,longitude,latitude
+82821020,-49.2160678044742,-25.4233146347775
+81350686,-49.3400481020638,-25.4936598469491
 ```
-dia,hora,vel_kmh,direcao_deg
-1,0,3.5,270
-1,1,4.1,265
-...
+
+### `vento.csv`
+```csv
+hora,velocidade_media,direcao
+06:00,5.2,270
+06:30,5.1,265
 ```
 
+### `rota.csv` (Saída)
+```csv
+CEP_inicial,Latitude_inicial,Longitude_inicial,Dia_do_voo,Hora_inicial,Velocidade,CEP_final,Latitude_final,Longitude_final,Pouso,Hora_final
+82821020,-25.4233146347775,-49.2160678044742,1,06:00,92,82821016,-25.4270763750322,-49.209505500185,NÃO,06:00
+```
+
+
+
+## 📈 Visualização
+
+Para visualizar os dados:
+
+```bash
+python plot.py
+```
+
+## 🔧 Configuração
+
+As constantes do projeto estão em `src/constants.py`:
+- Parâmetros do algoritmo genético
+- Limites do drone
+- Configurações de otimização
+
+## 🧬 Algoritmo Genético
+
+**Operadores Genéticos:**
+- **Seleção**: Seleção por torneio ou roleta
+- **Crossover**: Recombinação de rotas (Ex: Order Crossover - OX)
+- **Mutação**: Inversão, inserção ou troca de pontos
+
+**Critério de Convergência:**
+- Número máximo de gerações
+- Estagnação da população
+- Melhor fitness encontrado
+
+## Conceitos Técnicos
+
+### Velocidade Efetiva
+A velocidade efetiva do drone é calculada considerando:
+- Velocidade base do drone
+- Velocidade e direção do vento
+- Ângulo entre trajetória e vento
+
+### Fitness
+A função de fitness minimiza:
+- Distância total percorrida
+- Tempo de voo
+- Número de recargas necessárias
+
+### Recargas
+O drone precisa recarregar quando:
+- Bateria atinge limite crítico
+- Distância restante > autonomia
+
+## Troubleshooting
+
+**Arquivo não encontrado:**
+- Certifique-se que `coordenadas.csv` e `vento.csv` existem no diretório raiz
+
+**Erros de performance:**
+- Ajuste tamanho da população e gerações em `src/constants.py`
+- Reduza número de pontos para testes iniciais
+
+**Resultados inconsistentes:**
+- O GA é estocástico; execute múltiplas vezes
+- Ajuste parâmetros de seleção e mutação
+
+**Testes falhando:**
+- Verifique se as dependências estão instaladas: `pip install -r requirements.txt`
+- Execute em um ambiente Python 3.8+
+- Limpe cache: `pytest --cache-clear`
+
+## 🔍 Estrutura de um Teste
+
+Exemplo de teste unitário:
+
+```python
+import pytest
+from src import Drone
+
+def test_drone_velocidade():
+    drone = Drone()
+    assert drone.velocidade_maxima > 0
+    assert drone.autonomia > 0
+
+def test_drone_bateria():
+    drone = Drone()
+    assert drone.bateria_maxima > 0
+```
+
+## 📚 Referências
+
+- Algoritmos Genéticos: Holland (1975)
+- Problema do Caixeiro Viajante (TSP)
+- Otimização de rotas com restrições
+
+## 💡 Dicas de Uso
+
+1. **Tuning de Parâmetros**: Modifique `src/constants.py` para ajustar o comportamento do GA
+2. **Dados Reais**: Use seus próprios dados em `coordenadas.csv` e `vento.csv`
+3. **Debug**: Adicione prints em `src/ga.py` para acompanhar a evolução
+4. **Performance**: Para muitos pontos, aumente `MAX_GENERACOES` e tamanho da população
+
+## 👨‍💻 Autor
+
+Projeto de otimização de rotas de drones usando Algoritmo Genético.
+
+## 📄 Licença
+
+Este projeto é fornecido como está para fins educacionais e de pesquisa.
+
 ---
 
-# 📄 Saída gerada
-
-O arquivo `rota.csv` contém:
-
-| Coluna            | Descrição                     |
-| ----------------- | ----------------------------- |
-| CEP_inicial       | CEP do ponto de origem        |
-| Latitude_inicial  | Latitude do ponto inicial     |
-| Longitude_inicial | Longitude do ponto inicial    |
-| Dia_do_voo        | Dia do plano de voo           |
-| Hora_inicial      | Hora de saída                 |
-| Velocidade        | Velocidade do drone no trecho |
-| CEP_final         | CEP destino                   |
-| Latitude_final    | Latitude do destino           |
-| Longitude_final   | Longitude do destino          |
-| Pouso             | Indica se houve pouso forçado |
-| Hora_final        | Hora estimada de chegada      |
-
----
-
-# 🤖 Tecnologias utilizadas
-
-* **Python 3.10+**
-* **NumPy**
-* **Pandas**
-* **Numba (aceleração JIT)**
-* **PyTest**
-* **ThreadPoolExecutor**
-* Estratégias avançadas de AG (PMX, elitismo, reinício, cache LRU)
-
----
-
-# 📌 Objetivo Científico / Prático
-
-Este projeto pode ser aplicado a:
-
-* Logística de entregas com drones
-* Simulação de rotas sensíveis ao clima
-* Otimização NP-Difícil em grafos completos
-* Estudos de impacto aerodinâmico por vento em veículos aéreos autônomos
-
----
-
-# 📬 Contato
-
-Caso precise de auxílio, otimização adicional ou documentação expandida, posso gerar:
-
-* Diagramas UML
-* Fluxos de execução
-* Documentação API
-* Tutoriais de uso
-
-Basta solicitar!
+**Última atualização:** Novembro 2025
