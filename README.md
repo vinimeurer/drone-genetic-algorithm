@@ -49,7 +49,13 @@ drone-genetic-algorithm/
 
 ### `src/coordenadas.py`
 Gerencia dados de coordenadas geográficas dos pontos de interesse.
-- Carrega coordenadas de CSV
+- Carrega o arquivo CSV `coordenadas.csv` que contém ceps, latitudes e logitudes, no padrão abaixo:
+    ```csv
+    cep,longitude,latitude
+    82821020,-49.2160678044742,-25.4233146347775
+    81350686,-49.3400481020638,-25.4936598469491
+    ```
+  
 - Calcula distâncias entre pontos
 - Valida dados de entrada
 
@@ -61,7 +67,12 @@ Define as características e comportamento do drone.
 
 ### `src/vento.py`
 Gerencia dados de velocidade e direção do vento.
-- Carrega dados de vento por hora
+- Carrega dados de vento por hora do arwuivo CSV `vento.csv`, que apresenta o formato:
+    ```csv
+    hora,velocidade_media,direcao
+    06:00,5.2,270
+    06:30,5.1,265
+    ```
 - Fornece velocidade efetiva considerando o vento
 
 ### `src/ga.py`
@@ -126,11 +137,8 @@ Leitura e escrita de dados em CSV.
     pip install -r requirements.txt
     ```
 
-4. **Configurar parâmetros (opcional)**
 
-    - Caso queira executar o código com parâmetros diferentes do padrão (numero diferente de gerações, população, taxa de mutação, etc) edite o arquivo `constants.py` localizado no diretório `/src`.
-
-5. **Executar o script principal**
+4. **Executar o script principal**
 
     Na raiz do projeto, execute o comando:
 
@@ -138,7 +146,7 @@ Leitura e escrita de dados em CSV.
     python run.py
     ```
 
-6. **Verifique o output** 
+5. **Verifique o output** 
    Após o término da exeução, será mostrado o log
 
    ```bash
@@ -155,17 +163,19 @@ Leitura e escrita de dados em CSV.
    Distância total: 412.40 km
    ```
 
-   Verifique a rota gerada na raiz no projeto, no arquivo `rota.csv`.
+   Verifique a rota gerada na raiz no projeto, no arquivo `rota.csv`. O arquivo possui a ordem para a rota otimizada e possui o formato abaixo:
+    ```csv
+    CEP_inicial,Latitude_inicial,Longitude_inicial,Dia_do_voo,Hora_inicial,Velocidade,CEP_final,Latitude_final,Longitude_final,Pouso,Hora_final
+    82821020,-25.4233146347775,-49.2160678044742,1,06:00,92,82821016,-25.4270763750322,-49.209505500185,NÃO,06:00
+    ```
 
-7. **Plotar o gráfico (opcional)**
+### Fluxo de Execução
 
-   Caso queira visualizar a rota de maneira gráfica, xecute o comando abaixo:
-
-   ```bash
-   python plot.py
-   ```
-
-   Será gerada uma guia com o gráfico das rotas.
+1. **Carregamento de dados**: Lê `coordenadas.csv` e `vento.csv`
+2. **Inicialização**: Cria instâncias de Drone, Coordenadas e Vento
+3. **Algoritmo Genético**: Executa otimização iterativa
+4. **Reavaliação**: Valida melhor solução encontrada
+5. **Saída**: Gera `rota.csv` com a rota otimizada
 
 ## Testes
 
@@ -193,64 +203,91 @@ pytest tests/test_drone.py -v
 pytest tests/test_evaluator.py -v
 ```
 
-### Fluxo de Execução
-
-1. **Carregamento de dados**: Lê `coordenadas.csv` e `vento.csv`
-2. **Inicialização**: Cria instâncias de Drone, Coordenadas e Vento
-3. **Algoritmo Genético**: Executa otimização iterativa
-4. **Reavaliação**: Valida melhor solução encontrada
-5. **Saída**: Gera `rota.csv` com a rota otimizada
-
-## 📊 Formato dos Dados
-
-### `coordenadas.csv`
-```csv
-cep,longitude,latitude
-82821020,-49.2160678044742,-25.4233146347775
-81350686,-49.3400481020638,-25.4936598469491
-```
-
-### `vento.csv`
-```csv
-hora,velocidade_media,direcao
-06:00,5.2,270
-06:30,5.1,265
-```
-
-### `rota.csv` (Saída)
-```csv
-CEP_inicial,Latitude_inicial,Longitude_inicial,Dia_do_voo,Hora_inicial,Velocidade,CEP_final,Latitude_final,Longitude_final,Pouso,Hora_final
-82821020,-25.4233146347775,-49.2160678044742,1,06:00,92,82821016,-25.4270763750322,-49.209505500185,NÃO,06:00
-```
+**IMPORTANTE:** Para o funcionamento adequado, é necessário que todas as dependências estrjam corretamente instaladas. Portanto, certifique-se de ter executado o comando `pip install -r requirements.txt` antes de rodar os testes.
 
 
+## Visualização
 
-## 📈 Visualização
-
-Para visualizar os dados:
+Caso queira visualizar a rota otimizada do arquivo `rota.csv` de maneira gráfica, execute o comando abaixo:
 
 ```bash
 python plot.py
 ```
 
-## 🔧 Configuração
+Será gerada uma guia com o gráfico das rotas.
 
-As constantes do projeto estão em `src/constants.py`:
-- Parâmetros do algoritmo genético
-- Limites do drone
-- Configurações de otimização
+
+## Configuração
+
+Caso queira executar o código com parâmetros diferentes do padrão (numero diferente de gerações, população, taxa de mutação, etc) edite o arquivo `constants.py` localizado no diretório `/src`.
 
 ## 🧬 Algoritmo Genético
 
-**Operadores Genéticos:**
-- **Seleção**: Seleção por torneio ou roleta
-- **Crossover**: Recombinação de rotas (Ex: Order Crossover - OX)
-- **Mutação**: Inversão, inserção ou troca de pontos
+Embora existam vários operadores possíveis em Algoritmos Genéticos, este projeto utiliza **somente os métodos que mostraram maior estabilidade, performance e adequação ao problema de rotas com velocidades associadas**. Abaixo está um resumo **do que realmente foi implementado** no código e **por que essas escolhas foram feitas**:
 
-**Critério de Convergência:**
+### Operadores Genéticos Utilizados no Projeto
+
+#### Seleção - Torneio
+
+O código utiliza seleção por torneio (k=5 no começo, k=3 depois).
+
+**Motivo da escolha:**
+
+- É simples, rápido e funciona bem mesmo quando os valores de fitness têm escalas diferentes.
+- Mantém pressão seletiva controlada, evitando convergência prematura.
+- Menos sensível a problemas de normalização do fitness, ao contrário da roleta.
+
+#### Crossover para rotas - PMX (Partially-Mapped Crossover)
+
+Implementado em `pmx_crossover`.
+
+**Motivo da escolha:**
+
+- Preserva estrutura de permutação, essencial para o problema do TSP (não cria cidades duplicadas).
+- Mantém blocos de rota estáveis entre pais, o que ajuda a preservar subrotas boas.
+- Mais robusto que OX para cruzamentos onde os pais têm padrões muito diferentes.
+
+
+#### Crossover para velocidades - Segment Swap
+
+Implementado em `crossover_velocidades`. Troca de um segmento entre os vetores de velocidade dos pais.
+
+**Motivo da escolha:**
+
+- É simples e coerente com a rota (mantém tamanho e ordem).
+- Mantém alguma herança entre pais sem impor demasiada correlação com a rota — importante porque velocidade é um parâmetro contínuo/discreto independente do caminho.
+
+#### Mutação de rota - Inversão
+
+Implementado em `mutacao_inversao`
+
+**Motivo da escolha:**
+
+- É um dos melhores operadores de mutação para problemas do tipo TSP/Tour.
+- Tende a reduzir distância ao remover cruzamentos na rota.
+- Baixa probabilidade de gerar soluções totalmente aleatórias — mantém estabilidade.
+
+
+#### Mutação de velocidades - Alteração pontual
+
+Implementado em `mutacao_velocidades`
+
+**Motivo da escolha:**
+
+- Permite explorar diferentes velocidades sem modificar a estrutura da rota.
+- Controle simples e direto via taxa de mutação.
+- Flexível para ajustar consumo e tempo conforme o vento.
+
+#### Critério de Parada - Gerações + Estagnação
+
 - Número máximo de gerações
-- Estagnação da população
-- Melhor fitness encontrado
+- Estagnação da população com reinício rápido
+
+**Motivo da escolha:**
+
+- Evita desperdício computacional quando o algoritmo deixa de melhorar.
+- Permite explorar mais o espaço de busca quando preso em mínimos locais.
+- Combinação simples e eficiente para problemas complexos como roteamento com vento e recarga.
 
 ## Conceitos Técnicos
 
@@ -289,7 +326,7 @@ O drone precisa recarregar quando:
 - Execute em um ambiente Python 3.8+
 - Limpe cache: `pytest --cache-clear`
 
-## 🔍 Estrutura de um Teste
+## Estrutura de um Teste
 
 Exemplo de teste unitário:
 
@@ -307,27 +344,15 @@ def test_drone_bateria():
     assert drone.bateria_maxima > 0
 ```
 
-## 📚 Referências
+## Referências
 
-- Algoritmos Genéticos: Holland (1975)
-- Problema do Caixeiro Viajante (TSP)
-- Otimização de rotas com restrições
+HOLLAND, John H. *Adaptation in Natural and Artificial Systems: An Introductory Analysis with Applications to Biology, Control, and Artificial Intelligence.* Ann Arbor: University of Michigan Press, 1975.
 
-## 💡 Dicas de Uso
+LAWLER, Eugene L. et al. (Org.). *The Traveling Salesman Problem: A Guided Tour of Combinatorial Optimization.* New York: Wiley, 1985.
 
-1. **Tuning de Parâmetros**: Modifique `src/constants.py` para ajustar o comportamento do GA
-2. **Dados Reais**: Use seus próprios dados em `coordenadas.csv` e `vento.csv`
-3. **Debug**: Adicione prints em `src/ga.py` para acompanhar a evolução
-4. **Performance**: Para muitos pontos, aumente `MAX_GENERACOES` e tamanho da população
+GOLDEN, Bruce L.; RAGHAVAN, S.; WASIL, Edward A. (Org.). *The Vehicle Routing Problem: Latest Advances and New Challenges.* New York: Springer, 2008.
 
-## 👨‍💻 Autor
+## Licença
 
-Projeto de otimização de rotas de drones usando Algoritmo Genético.
+Este código está sob a licença MIT. Você pode usar, copiar, modificar e distribuir este projeto livremente, desde que mantenha o aviso de copyright e a licença incluídos. Para mais detalhes, consulte o arquivo LICENSE.
 
-## 📄 Licença
-
-Este projeto é fornecido como está para fins educacionais e de pesquisa.
-
----
-
-**Última atualização:** Novembro 2025
